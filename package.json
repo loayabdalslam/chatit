@@ -23,7 +23,7 @@
     "sentiment": "^5.0.2",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.1.0",
-    "lucide-react": "^0.285.0"
+    "lucide-react": "0.285.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
