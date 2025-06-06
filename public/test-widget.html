@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Widget Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .content {
+            line-height: 1.8;
+            color: #555;
+            font-size: 16px;
+        }
+        .features {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .features h2 {
+            color: #2563eb;
+            margin-top: 0;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 8px 0;
+            color: #666;
+        }
+        .test-instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .test-instructions h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">Widget Test Environment</div>
+    
+    <div class="container">
+        <h1>🤖 Chatbot Widget Test</h1>
+        
+        <div class="content">
+            <p>Welcome to the chatbot widget testing environment! This page simulates a real website where your chatbot widget will be embedded.</p>
+            
+            <div class="test-instructions">
+                <h3>🧪 How to Test</h3>
+                <ol>
+                    <li>Look for the chat button in the bottom-right corner</li>
+                    <li>Click the button to open the chat window</li>
+                    <li>Send a test message and wait for the response</li>
+                    <li>Try different message types to test the AI responses</li>
+                    <li>Test the widget on different screen sizes</li>
+                </ol>
+            </div>
+            
+            <div class="features">
+                <h2>✨ Widget Features</h2>
+                <ul>
+                    <li><strong>Custom Design:</strong> Fully customizable colors, fonts, and animations</li>
+                    <li><strong>Real-time Chat:</strong> Instant messaging with AI responses</li>
+                    <li><strong>Responsive:</strong> Works perfectly on desktop, tablet, and mobile</li>
+                    <li><strong>Secure:</strong> API key authentication for secure communication</li>
+                    <li><strong>Error Handling:</strong> Graceful error messages and connection recovery</li>
+                    <li><strong>Easy Integration:</strong> Simple copy-paste installation</li>
+                </ul>
+            </div>
+            
+            <h2>📝 Sample Content</h2>
+            <p>This is sample content to demonstrate how the widget appears alongside your website content. The widget is designed to be unobtrusive while remaining easily accessible to your visitors.</p>
+            
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            
+            <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+            
+            <h2>🎯 Test Scenarios</h2>
+            <p>Try these test messages to see different AI responses:</p>
+            <ul>
+                <li>"Hello" or "Hi" - Greeting response</li>
+                <li>"Help" - Assistance offer</li>
+                <li>"Price" or "Cost" - Pricing information</li>
+                <li>"Thank you" - Polite acknowledgment</li>
+                <li>"Goodbye" - Farewell message</li>
+                <li>Any other message - General helpful response</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <script>
+      (function() {
+        const config = {
+          chatbotId: "demo_chatbot_id",
+          apiUrl: "https://fast-bulldog-662.convex.app",
+          primaryColor: "#2563eb",
+          position: "bottom-right",
+          size: "medium",
+          welcomeMessage: "Hi! How can I help you today?",
+          placeholder: "Type your message...",
+          showBranding: true,
+          borderRadius: 12,
+          fontFamily: "system-ui",
+          animation: "bounce"
+        };
+        
+        // Create widget container
+        const widget = document.createElement('div');
+        widget.style.cssText = `
+          position: fixed;
+          ${config.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
+          ${config.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+          z-index: 9999;
+          font-family: ${config.fontFamily}, sans-serif;
+        `;
+        
+        // Chat button
+        const button = document.createElement('button');
+        const buttonSize = config.size === 'small' ? '50px' : config.size === 'large' ? '70px' : '60px';
+        button.style.cssText = `
+          width: ${buttonSize};
+          height: ${buttonSize};
+          border-radius: ${config.borderRadius}px;
+          background: ${config.primaryColor};
+          border: none;
+          color: white;
+          font-size: ${config.size === 'small' ? '20px' : config.size === 'large' ? '28px' : '24px'};
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          ${config.animation === 'bounce' ? 'animation: bounce 2s infinite;' : ''}
+          ${config.animation === 'pulse' ? 'animation: pulse 2s infinite;' : ''}
+          ${config.animation === 'shake' ? 'animation: shake 0.5s ease-in-out infinite alternate;' : ''}
+        `;
+        
+        // Create custom SVG icon
+        const iconSvg = document.createElement('div');
+        iconSvg.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.36 15.01 3 16.31L2 22L7.69 21C8.99 21.64 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" opacity="0.9"/>
+            <circle cx="8" cy="12" r="1.5" fill="white"/>
+            <circle cx="12" cy="12" r="1.5" fill="white"/>
+            <circle cx="16" cy="12" r="1.5" fill="white"/>
+          </svg>
+        `;
+        button.appendChild(iconSvg);
+        
+        // Chat window
+        const chatWindow = document.createElement('div');
+        chatWindow.style.cssText = `
+          position: absolute;
+          ${config.position.includes('bottom') ? 'bottom: 80px;' : 'top: 80px;'}
+          ${config.position.includes('right') ? 'right: 0;' : 'left: 0;'}
+          width: 350px;
+          height: 500px;
+          background: white;
+          border-radius: ${config.borderRadius}px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          display: none;
+          flex-direction: column;
+          overflow: hidden;
+        `;
+        
+        // Chat header
+        const header = document.createElement('div');
+        header.style.cssText = `
+          background: ${config.primaryColor};
+          color: white;
+          padding: 15px;
+          font-weight: 600;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        `;
+        header.innerHTML = `
+          <span>${config.welcomeMessage}</span>
+          <button onclick="toggleChat()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+        `;
+        
+        // Chat messages
+        const messages = document.createElement('div');
+        messages.style.cssText = `
+          flex: 1;
+          padding: 15px;
+          overflow-y: auto;
+          background: #f9fafb;
+        `;
+        
+        // Chat input
+        const inputContainer = document.createElement('div');
+        inputContainer.style.cssText = `
+          padding: 15px;
+          border-top: 1px solid #e5e7eb;
+          background: white;
+        `;
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = config.placeholder;
+        input.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: white;
+          color: black;
+          outline: none;
+        `;
+        
+        inputContainer.appendChild(input);
+        chatWindow.appendChild(header);
+        chatWindow.appendChild(messages);
+        chatWindow.appendChild(inputContainer);
+        
+        // Add branding
+        const branding = document.createElement('div');
+        branding.style.cssText = `
+          padding: 8px 15px;
+          text-align: center;
+          font-size: 11px;
+          color: #6b7280;
+          background: white;
+          border-top: 1px solid #e5e7eb;
+        `;
+        branding.innerHTML = 'Powered by <a href="https://chatit.cloud" target="_blank" style="color: #2563eb; text-decoration: none;">chatit.cloud</a>';
+        chatWindow.appendChild(branding);
+        
+        widget.appendChild(button);
+        widget.appendChild(chatWindow);
+        
+        // Toggle function
+        window.toggleChat = function() {
+          const isOpen = chatWindow.style.display === 'flex';
+          chatWindow.style.display = isOpen ? 'none' : 'flex';
+        };
+        
+        button.onclick = window.toggleChat;
+        
+        // Add to page
+        document.body.appendChild(widget);
+        
+        // Handle messages
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter' && input.value.trim()) {
+            const userMsg = document.createElement('div');
+            userMsg.style.cssText = `
+              margin-bottom: 10px;
+              text-align: right;
+            `;
+            userMsg.innerHTML = `
+              <div style="
+                display: inline-block;
+                background: ${config.primaryColor};
+                color: white;
+                padding: 8px 12px;
+                border-radius: 12px;
+                max-width: 80%;
+              ">${input.value}</div>
+            `;
+            messages.appendChild(userMsg);
+            
+            // Send to chatbot API
+            fetch(`${config.apiUrl}/api/chat`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-API-Key': 'demo_api_key'
+              },
+              body: JSON.stringify({
+                chatbotId: config.chatbotId,
+                message: input.value,
+                sessionId: 'widget-test-' + Date.now()
+              })
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              }
+              return response.json();
+            })
+            .then(data => {
+              const botMsg = document.createElement('div');
+              botMsg.style.cssText = `
+                margin-bottom: 10px;
+                text-align: left;
+              `;
+              botMsg.innerHTML = `
+                <div style="
+                  display: inline-block;
+                  background: #e5e7eb;
+                  color: black;
+                  padding: 8px 12px;
+                  border-radius: 12px;
+                  max-width: 80%;
+                ">${data.response || 'Sorry, I could not process your request.'}</div>
+              `;
+              messages.appendChild(botMsg);
+              messages.scrollTop = messages.scrollHeight;
+            })
+            .catch(error => {
+              console.error('Chat error:', error);
+              const errorMsg = document.createElement('div');
+              errorMsg.style.cssText = `
+                margin-bottom: 10px;
+                text-align: left;
+              `;
+              errorMsg.innerHTML = `
+                <div style="
+                  display: inline-block;
+                  background: #fee2e2;
+                  color: #dc2626;
+                  padding: 8px 12px;
+                  border-radius: 12px;
+                  max-width: 80%;
+                  border: 1px solid #fecaca;
+                ">Connection error: ${error.message}. Please try again.</div>
+              `;
+              messages.appendChild(errorMsg);
+              messages.scrollTop = messages.scrollHeight;
+            });
+            
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+          }
+        });
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-30px,0); }
+            70% { transform: translate3d(0,-15px,0); }
+            90% { transform: translate3d(0,-4px,0); }
+          }
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+          }
+          @keyframes shake {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(2px); }
+          }
+        `;
+        document.head.appendChild(style);
+      })();
+    </script>
+</body>
+</html>
