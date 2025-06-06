@@ -2,6 +2,20 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 
+// Type definition for widget configuration
+type WidgetConfig = {
+  primaryColor: string;
+  position: string;
+  size: string;
+  welcomeMessage: string;
+  placeholder: string;
+  showBranding: boolean;
+  borderRadius: number;
+  fontFamily: string;
+  animation: string;
+  theme: string;
+};
+
 const http = httpRouter();
 
 // CORS headers helper
@@ -47,22 +61,24 @@ http.route({
         });
       }
 
+      const defaultWidgetConfig: WidgetConfig = {
+        primaryColor: '#2563eb',
+        position: 'bottom-right',
+        size: 'medium',
+        welcomeMessage: `Hi! I'm ${chatbot.name}. How can I help you today?`,
+        placeholder: 'Type your message...',
+        showBranding: true,
+        borderRadius: 12,
+        fontFamily: 'system-ui',
+        animation: 'bounce',
+        theme: 'light',
+      };
+
       return new Response(JSON.stringify({
         id: chatbot._id,
         name: chatbot.name,
         description: chatbot.description,
-        widgetConfig: chatbot.widgetConfig || {
-          primaryColor: '#2563eb',
-          position: 'bottom-right',
-          size: 'medium',
-          welcomeMessage: `Hi! I'm ${chatbot.name}. How can I help you today?`,
-          placeholder: 'Type your message...',
-          showBranding: true,
-          borderRadius: 12,
-          fontFamily: 'system-ui',
-          animation: 'bounce',
-          theme: 'light',
-        }
+        widgetConfig: { ...defaultWidgetConfig, ...chatbot.widgetConfig }
       }), {
         headers: getCorsHeaders(),
       });
@@ -177,7 +193,20 @@ http.route({
         });
       }
 
-      const widgetConfig = chatbot.widgetConfig || {};
+      const defaultWidgetConfig: WidgetConfig = {
+        primaryColor: '#2563eb',
+        position: 'bottom-right',
+        size: 'medium',
+        welcomeMessage: `Hi! I'm ${chatbot.name}. How can I help you today?`,
+        placeholder: 'Type your message...',
+        showBranding: true,
+        borderRadius: 12,
+        fontFamily: 'system-ui',
+        animation: 'bounce',
+        theme: 'light',
+      };
+
+      const widgetConfig: WidgetConfig = { ...defaultWidgetConfig, ...chatbot.widgetConfig };
       const embedCode = `
 <script>
 (function() {
