@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
@@ -33,6 +33,24 @@ export const get = query({
     }
     
     return chatbot;
+  },
+});
+
+// Internal function to get public chatbot info for widgets
+export const getPublicInfo = internalQuery({
+  args: { chatbotId: v.id("chatbots") },
+  handler: async (ctx, args) => {
+    const chatbot = await ctx.db.get(args.chatbotId);
+    if (!chatbot || !chatbot.isActive) {
+      return null;
+    }
+    
+    return {
+      _id: chatbot._id,
+      name: chatbot.name,
+      description: chatbot.description,
+      widgetConfig: chatbot.widgetConfig,
+    };
   },
 });
 

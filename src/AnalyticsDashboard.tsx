@@ -165,33 +165,103 @@ export function AnalyticsDashboard({ chatbotId, chatbots = [], onSelectChatbot }
         )}
       </div>
 
+      {/* Performance Overview */}
+      {performanceMetrics && (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Performance Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <div className="text-3xl font-bold text-blue-600 mb-1">{formatTime(performanceMetrics.avgResponseTime * 1000)}</div>
+              <div className="text-sm font-medium text-gray-600 mb-2">Average Response Time</div>
+              <div className="flex items-center text-sm">
+                <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                <span className="text-gray-600">
+                  {performanceMetrics.avgResponseTime < 2 ? 'Excellent' : 
+                   performanceMetrics.avgResponseTime < 3 ? 'Good' : 'Needs Improvement'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-green-600 mb-1">{performanceMetrics.satisfactionRate}%</div>
+              <div className="text-sm font-medium text-gray-600 mb-2">User Satisfaction Rate</div>
+              <div className="flex items-center text-sm">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                <span className="text-green-600">High Satisfaction</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sentiment Analysis */}
       {sentimentAnalysis && sentimentAnalysis.positivePercentage + sentimentAnalysis.neutralPercentage + sentimentAnalysis.negativePercentage > 0 && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Analysis</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{sentimentAnalysis.positivePercentage}%</div>
-              <div className="text-sm text-gray-600">Positive</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Sentiment Analysis</h3>
+          
+          {/* Sentiment Percentages with Progress Bars */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div>
+              <div className="text-3xl font-bold text-green-600 mb-1">{sentimentAnalysis.positivePercentage}%</div>
+              <div className="text-sm text-gray-600 mb-2">Positive</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${sentimentAnalysis.positivePercentage}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">{sentimentAnalysis.neutralPercentage}%</div>
-              <div className="text-sm text-gray-600">Neutral</div>
+            <div>
+              <div className="text-3xl font-bold text-gray-600 mb-1">{sentimentAnalysis.neutralPercentage}%</div>
+              <div className="text-sm text-gray-600 mb-2">Neutral</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-gray-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${sentimentAnalysis.neutralPercentage}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{sentimentAnalysis.negativePercentage}%</div>
-              <div className="text-sm text-gray-600">Negative</div>
+            <div>
+              <div className="text-3xl font-bold text-red-600 mb-1">{sentimentAnalysis.negativePercentage}%</div>
+              <div className="text-sm text-gray-600 mb-2">Negative</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-red-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${sentimentAnalysis.negativePercentage}%` }}
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div className={`text-3xl font-bold mb-1 ${
+                sentimentAnalysis.overallSentiment > 0 ? 'text-green-600' : 
+                sentimentAnalysis.overallSentiment < 0 ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {sentimentAnalysis.overallSentiment > 0 ? '+' : ''}{sentimentAnalysis.overallSentiment}
+              </div>
+              <div className="text-sm text-gray-600">Overall Score</div>
             </div>
           </div>
-          <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">Overall Sentiment Score</div>
-            <div className={`text-xl font-bold ${
-              sentimentAnalysis.overallSentiment > 0 ? 'text-green-600' : 
-              sentimentAnalysis.overallSentiment < 0 ? 'text-red-600' : 'text-gray-600'
-            }`}>
-              {sentimentAnalysis.overallSentiment > 0 ? '+' : ''}{sentimentAnalysis.overallSentiment}
+
+          {/* 7-Day Sentiment Trend */}
+          {sentimentAnalysis.trendData && sentimentAnalysis.trendData.length > 0 && (
+            <div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 mb-4">7-Day Sentiment Trend</h4>
+                <div className="flex justify-between items-end space-x-4">
+                  {sentimentAnalysis.trendData.map((day, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                      <div className="text-xs text-gray-600 mb-1">{day.day}</div>
+                      <div className={`text-sm font-bold mb-1 ${
+                        day.sentiment > 0 ? 'text-green-600' : 
+                        day.sentiment < 0 ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {day.sentiment > 0 ? '+' : ''}{day.sentiment}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

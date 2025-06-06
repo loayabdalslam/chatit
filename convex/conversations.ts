@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 // Public functions
 export const create = mutation({
@@ -123,7 +124,7 @@ export const sendMessage = mutation({
     }
 
     // Insert user message
-    await ctx.db.insert("messages", {
+    const userMessageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       content: args.content,
       role: "user",
@@ -139,6 +140,13 @@ export const sendMessage = mutation({
       content: response,
       role: "assistant",
       timestamp: Date.now(),
+    });
+
+    // Trigger sentiment analysis for user message
+    await ctx.scheduler.runAfter(0, internal.sentiment.analyzeSentiment, {
+      conversationId: args.conversationId,
+      messageId: userMessageId,
+      messageContent: args.content,
     });
 
     return response;
@@ -214,7 +222,7 @@ export const sendMessageInternal = internalMutation({
   },
   handler: async (ctx, args) => {
     // Insert user message
-    await ctx.db.insert("messages", {
+    const userMessageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       content: args.content,
       role: "user",
@@ -230,6 +238,13 @@ export const sendMessageInternal = internalMutation({
       content: response,
       role: "assistant",
       timestamp: Date.now(),
+    });
+
+    // Trigger sentiment analysis for user message
+    await ctx.scheduler.runAfter(0, internal.sentiment.analyzeSentiment, {
+      conversationId: args.conversationId,
+      messageId: userMessageId,
+      messageContent: args.content,
     });
 
     return response;
