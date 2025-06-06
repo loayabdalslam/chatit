@@ -3,212 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tree Chat Widget Test</title>
+    <title>ChatBase Widget Test</title>
     <style>
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-        }
-        
-        .container {
-            max-width: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
             margin: 0 auto;
-        }
-        
-        .hero {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #fff, #e0e7ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-bottom: 60px;
-        }
-        
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .feature h3 {
-            font-size: 1.4rem;
-            margin-bottom: 15px;
-        }
-        
-        .feature p {
-            opacity: 0.8;
+            padding: 20px;
             line-height: 1.6;
         }
         
         .test-section {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-        }
-        
-        .test-section h2 {
-            margin-bottom: 20px;
-        }
-        
-        .test-section p {
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-        
-        .cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 15px 30px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50px;
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .cta:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .widget-demo {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
+            margin: 40px 0;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            opacity: 0;
-            animation: fadeInUp 0.5s ease forwards 2s;
         }
         
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .inline-widget-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px 0;
         }
         
-        .demo-content {
-            margin-top: 40px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .code-block {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
         }
         
-        .demo-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 20px;
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        .test-button:hover {
+            background: #5a67d8;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1>Tree Chat Widget</h1>
-            <p>Experience the future of conversational AI with our Tree-powered chat widget. Built with modern web technologies and designed for seamless integration.</p>
+    <h1>ChatBase Widget Integration Tests</h1>
+    
+    <p>This page demonstrates different ways to integrate the ChatBase widget into your website using the new iframe-based approach that eliminates CORS issues.</p>
+    
+    <!-- Test 1: Inline Widget -->
+    <div class="test-section">
+        <h2>1. Inline Widget (Embedded in Container)</h2>
+        <p>Widget embedded directly in a page container:</p>
+        
+        <div class="code-block">
+&lt;script src="https://fast-bulldog-662.convex.app/embed.js"&gt;&lt;/script&gt;
+&lt;div id="my-chatbot"&gt;&lt;/div&gt;
+&lt;script&gt;
+    ChatBaseWidget.embed({
+        chatbotId: 'test-bot-123',
+        containerId: 'my-chatbot',
+        width: '400px',
+        height: '600px',
+        position: 'inline'
+    });
+&lt;/script&gt;
         </div>
         
-        <div class="features">
-            <div class="feature">
-                <h3>🎨 Modern Design</h3>
-                <p>Beautiful, responsive UI that adapts to your brand colors and themes. Supports both light and dark modes.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>⚡ Lightning Fast</h3>
-                <p>Optimized for performance with lazy loading, smart caching, and efficient DOM manipulation.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>🔧 Easy Integration</h3>
-                <p>Simple one-line integration with any website. No complex setup or configuration required.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>🛡️ Secure & Private</h3>
-                <p>Enterprise-grade security with CORS support and optional API key authentication.</p>
-            </div>
+        <div id="inline-widget" class="inline-widget-container"></div>
+    </div>
+    
+    <!-- Test 2: Auto-embed with data attributes -->
+    <div class="test-section">
+        <h2>2. Auto-embed with Data Attributes</h2>
+        <p>Simply add data attributes to any div:</p>
+        
+        <div class="code-block">
+&lt;script src="https://fast-bulldog-662.convex.app/embed.js"&gt;&lt;/script&gt;
+&lt;div data-chatbase-widget 
+     data-chatbot-id="test-bot-123"
+     data-position="inline"
+     data-width="400px" 
+     data-height="600px"&gt;
+&lt;/div&gt;
         </div>
         
-        <div class="test-section">
-            <h2>Test the Widget</h2>
-            <p>The chat widget is now active in the bottom-right corner. Click it to start a conversation and experience the seamless AI interaction.</p>
-            
-            <div class="demo-content">
-                <div class="demo-text">
-                    <strong>Try asking:</strong><br>
-                    • "What can you help me with?"<br>
-                    • "Tell me about your features"<br>
-                    • "How does this widget work?"<br>
-                    • Or any other question you'd like!
-                </div>
-            </div>
-            
-            <a href="https://chatit.cloud" class="cta">
-                <span>🚀</span>
-                <span>Get Your Own Widget</span>
-            </a>
+        <div data-chatbase-widget 
+             data-chatbot-id="test-bot-123"
+             data-position="inline"
+             data-width="400px" 
+             data-height="600px"
+             class="inline-widget-container">
         </div>
     </div>
     
-    <div class="widget-demo">
-        👋 Chat widget ready! Click to test →
+    <!-- Test 3: Floating Widget Controls -->
+    <div class="test-section">
+        <h2>3. Floating Widget (Bottom Right/Left)</h2>
+        <p>Add a floating chat button to your website:</p>
+        
+        <div class="code-block">
+&lt;script src="https://fast-bulldog-662.convex.app/embed.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    ChatBaseWidget.embed({
+        chatbotId: 'test-bot-123',
+        position: 'bottom-right', // or 'bottom-left'
+        width: '400px',
+        height: '600px'
+    });
+&lt;/script&gt;
+        </div>
+        
+        <button class="test-button" onclick="testFloatingBottomRight()">Add Bottom Right Widget</button>
+        <button class="test-button" onclick="testFloatingBottomLeft()">Add Bottom Left Widget</button>
+        <button class="test-button" onclick="removeFloatingWidgets()">Remove Floating Widgets</button>
+    </div>
+    
+    <!-- Test 4: Direct iframe -->
+    <div class="test-section">
+        <h2>4. Direct iframe (No JavaScript Required)</h2>
+        <p>For the simplest integration, use a direct iframe:</p>
+        
+        <div class="code-block">
+&lt;iframe 
+    src="https://fast-bulldog-662.convex.app/widget.html?chatbotId=test-bot-123"
+    width="400" 
+    height="600"
+    style="border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"&gt;
+&lt;/iframe&gt;
+        </div>
+        
+        <iframe 
+            src="https://fast-bulldog-662.convex.app/widget.html?chatbotId=test-bot-123"
+            width="400" 
+            height="600"
+            style="border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        </iframe>
+    </div>
+    
+    <!-- Test 5: Different Chatbot IDs -->
+    <div class="test-section">
+        <h2>5. Multiple Chatbots</h2>
+        <p>Test with different chatbot IDs:</p>
+        
+        <button class="test-button" onclick="testDifferentChatbot('support-bot')">Support Bot</button>
+        <button class="test-button" onclick="testDifferentChatbot('sales-bot')">Sales Bot</button>
+        <button class="test-button" onclick="testDifferentChatbot('custom-bot-456')">Custom Bot</button>
+        
+        <div id="multi-bot-container" class="inline-widget-container"></div>
     </div>
 
-    <!-- Tree Chat Widget Integration -->
-    <script 
-        src="/widget.js"
-        data-chatbot-id="replace-with-real-chatbot-id"
-        data-api-url="https://fast-bulldog-662.convex.app"
-        data-chatbot-name="Tree Assistant"
-        data-primary-color="#2563eb"
-        data-position="bottom-right"
-        data-welcome-message="Hi! I'm Tree Assistant. How can I help you today?"
-        data-placeholder="Type your message..."
-        data-show-branding="true"
-        data-border-radius="12"
-        data-font-family="system-ui"
-        data-animation="bounce"
-        data-theme="light"
-    ></script>
+    <!-- Load the widget script -->
+    <script src="https://fast-bulldog-662.convex.app/embed.js"></script>
+    
+    <script>
+        // Test functions
+        let floatingWidgetCount = 0;
+        
+        function testFloatingBottomRight() {
+            ChatBaseWidget.embed({
+                chatbotId: 'test-bot-123',
+                position: 'bottom-right',
+                width: '400px',
+                height: '600px'
+            });
+            floatingWidgetCount++;
+        }
+        
+        function testFloatingBottomLeft() {
+            ChatBaseWidget.embed({
+                chatbotId: 'test-bot-123',
+                position: 'bottom-left',
+                width: '400px',
+                height: '600px'
+            });
+            floatingWidgetCount++;
+        }
+        
+        function removeFloatingWidgets() {
+            // Remove all floating widgets
+            const buttons = document.querySelectorAll('[style*="position: fixed"]');
+            const containers = document.querySelectorAll('[style*="position: fixed"][style*="z-index: 9998"]');
+            
+            buttons.forEach(btn => {
+                if (btn.innerHTML === '💬') btn.remove();
+            });
+            
+            containers.forEach(container => container.remove());
+            floatingWidgetCount = 0;
+        }
+        
+        function testDifferentChatbot(chatbotId) {
+            const container = document.getElementById('multi-bot-container');
+            container.innerHTML = ''; // Clear previous
+            
+            if (!container.id) {
+                container.id = 'multi-bot-' + Date.now();
+            }
+            
+            ChatBaseWidget.embed({
+                chatbotId: chatbotId,
+                containerId: container.id,
+                width: '400px',
+                height: '600px',
+                position: 'inline'
+            });
+        }
+        
+        // Initialize inline widget for test 1
+        document.addEventListener('DOMContentLoaded', () => {
+            ChatBaseWidget.embed({
+                chatbotId: 'test-bot-123',
+                containerId: 'inline-widget',
+                width: '400px',
+                height: '600px',
+                position: 'inline'
+            });
+        });
+    </script>
 </body>
 </html> 

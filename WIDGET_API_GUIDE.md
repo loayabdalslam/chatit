@@ -1,263 +1,296 @@
-# Chatbot Widget API Integration Guide
+# ChatBase Widget Integration Guide
 
-## 🚀 Overview
+## Overview
 
-This guide covers the new API endpoints and embedding capabilities for the chatbot widget system. The widget now dynamically fetches chatbot configuration and supports easy integration with any website or system.
+The ChatBase Widget uses an **iframe-based architecture** that completely eliminates CORS issues by hosting the widget page on the same domain as your API. This approach is more secure, reliable, and works from any website or local file.
 
-## 🔧 API Endpoints
+## How It Works
 
-### 1. Get Chatbot Configuration
-**Endpoint:** `GET /api/chatbot/{chatbotId}`
+1. **Widget Page**: A dedicated HTML page (`widget.html`) contains the full chat interface
+2. **Iframe Embedding**: The widget is embedded using iframes that load the widget page
+3. **Same-Origin Requests**: All API calls happen from within the iframe (same domain), avoiding CORS
+4. **Configuration**: Widget settings are passed via URL parameters
 
-Retrieves chatbot information and widget configuration.
+## Integration Methods
 
-**Response:**
-```json
-{
-  "id": "chatbot_id",
-  "name": "My Assistant",
-  "description": "Helpful AI assistant",
-  "widgetConfig": {
-    "primaryColor": "#2563eb",
-    "position": "bottom-right",
-    "size": "medium",
-    "welcomeMessage": "Hi! I'm My Assistant. How can I help you today?",
-    "placeholder": "Type your message...",
-    "showBranding": true,
-    "borderRadius": 12,
-    "fontFamily": "system-ui",
-    "animation": "bounce",
-    "theme": "light"
-  }
-}
-```
+### Method 1: JavaScript Embed (Recommended)
 
-### 2. Send Chat Message
-**Endpoint:** `POST /api/chat`
-
-Sends a message and receives a response from the chatbot.
-
-**Request Body:**
-```json
-{
-  "chatbotId": "your_chatbot_id",
-  "message": "Hello, how are you?",
-  "sessionId": "unique_session_id"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Hello! I'm doing great, thank you for asking. How can I help you today?"
-}
-```
-
-### 3. Get Embed Code
-**Endpoint:** `GET /api/embed/{chatbotId}`
-
-Returns ready-to-use HTML embed code for the chatbot widget.
-
-**Response:** HTML script tag with all necessary configuration.
-
-## 🎨 Widget Integration
-
-### Basic Integration
-
-The simplest way to add the chatbot widget to any website:
+Load the embed script and create widgets programmatically:
 
 ```html
-<script 
-  src="https://your-domain.com/widget.js"
-  data-chatbot-id="your_chatbot_id"
-  data-api-url="https://your-domain.com">
+<script src="https://fast-bulldog-662.convex.app/embed.js"></script>
+<script>
+    ChatBaseWidget.embed({
+        chatbotId: 'your-chatbot-id',
+        position: 'bottom-right', // or 'bottom-left', 'inline'
+        width: '400px',
+        height: '600px'
+    });
 </script>
 ```
 
-### Advanced Configuration
+### Method 2: Inline Container Embedding
 
-For custom styling and behavior:
+Embed the widget in a specific container:
 
 ```html
-<script 
-  src="https://your-domain.com/widget.js"
-  data-chatbot-id="your_chatbot_id"
-  data-api-url="https://your-domain.com"
-  data-theme="dark"
-  data-primary-color="#667eea"
-  data-position="bottom-left"
-  data-size="large"
-  data-welcome-message="Custom welcome message"
-  data-placeholder="Ask me anything..."
-  data-show-branding="false"
-  data-border-radius="8"
-  data-font-family="Inter"
-  data-animation="pulse">
+<script src="https://fast-bulldog-662.convex.app/embed.js"></script>
+<div id="my-chatbot"></div>
+<script>
+    ChatBaseWidget.embed({
+        chatbotId: 'your-chatbot-id',
+        containerId: 'my-chatbot',
+        width: '400px',
+        height: '600px',
+        position: 'inline'
+    });
 </script>
 ```
 
-### Widget Configuration Options
+### Method 3: Auto-embed with Data Attributes
 
-| Attribute | Default | Options | Description |
-|-----------|---------|---------|-------------|
-| `data-chatbot-id` | - | string | **Required.** Your chatbot ID |
-| `data-api-url` | current origin | URL | API base URL |
-| `data-theme` | `light` | `light`, `dark` | Widget color theme |
-| `data-primary-color` | `#2563eb` | hex color | Main accent color |
-| `data-position` | `bottom-right` | `bottom-right`, `bottom-left`, `top-right`, `top-left` | Widget position |
-| `data-size` | `medium` | `small`, `medium`, `large` | Widget size |
-| `data-welcome-message` | Auto-generated | string | Initial bot message |
-| `data-placeholder` | `Type your message...` | string | Input placeholder text |
-| `data-show-branding` | `true` | `true`, `false` | Show "Powered by" text |
-| `data-border-radius` | `12` | number | Corner roundness in pixels |
-| `data-font-family` | `system-ui` | string | Font family name |
-| `data-animation` | `bounce` | `bounce`, `pulse`, `none` | Button animation |
+The simplest method - just add data attributes:
 
-## 💡 Dynamic Configuration
+```html
+<script src="https://fast-bulldog-662.convex.app/embed.js"></script>
+<div data-chatbase-widget 
+     data-chatbot-id="your-chatbot-id"
+     data-position="inline"
+     data-width="400px" 
+     data-height="600px">
+</div>
+```
 
-The widget automatically fetches chatbot configuration from the server, including:
+### Method 4: Direct iframe (No JavaScript)
 
-- **Chatbot name** - Used as widget title
-- **Welcome message** - Customized greeting
-- **Widget styling** - Colors, theme, positioning
-- **Behavior settings** - Animations, branding
+For the most basic integration:
 
-This means you can update the chatbot configuration in your admin panel, and all embedded widgets will automatically use the new settings without code changes.
+```html
+<iframe 
+    src="https://fast-bulldog-662.convex.app/widget.html?chatbotId=your-chatbot-id"
+    width="400" 
+    height="600"
+    style="border: none; border-radius: 12px;">
+</iframe>
+```
 
-## 🔐 CORS Configuration
+## Configuration Options
 
-The API includes proper CORS headers to allow embedding on any domain:
+### JavaScript Embed Options
 
 ```javascript
-// Automatic CORS headers
-"Access-Control-Allow-Origin": "*"
-"Access-Control-Allow-Methods": "POST, OPTIONS, GET, PUT, DELETE"
-"Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key"
+ChatBaseWidget.embed({
+    chatbotId: 'your-chatbot-id',    // Required: Your chatbot ID
+    containerId: 'container-id',      // For inline widgets
+    width: '400px',                   // Widget width
+    height: '600px',                  // Widget height
+    position: 'bottom-right',         // 'bottom-right', 'bottom-left', 'inline'
+    theme: 'light'                    // Theme (future use)
+});
 ```
 
-## 🛠 Error Handling
+### Data Attributes
+
+- `data-chatbase-widget`: Enables auto-embedding
+- `data-chatbot-id`: Your chatbot ID
+- `data-position`: Widget position ('inline' for containers)
+- `data-width`: Widget width
+- `data-height`: Widget height
+
+### URL Parameters (for direct iframe)
+
+- `chatbotId`: Your chatbot ID
+- `theme`: Theme preference (future use)
+
+## Widget Positions
+
+### Floating Widgets
+
+- **bottom-right**: Floating button in bottom-right corner
+- **bottom-left**: Floating button in bottom-left corner
+
+### Inline Widgets
+
+- **inline**: Embedded directly in a page container
+
+## API Endpoints
+
+The widget automatically uses these endpoints:
+
+- `GET /api/chatbot/{chatbotId}` - Fetch chatbot configuration
+- `POST /api/chat` - Send messages and receive responses
+
+## Advanced Usage
+
+### Multiple Widgets
+
+You can embed multiple widgets with different chatbot IDs:
+
+```javascript
+// Support chatbot
+ChatBaseWidget.embed({
+    chatbotId: 'support-bot',
+    containerId: 'support-widget',
+    position: 'inline'
+});
+
+// Sales chatbot
+ChatBaseWidget.embed({
+    chatbotId: 'sales-bot',
+    position: 'bottom-right'
+});
+```
+
+### Dynamic Widget Creation
+
+```javascript
+function showChatbot(chatbotId) {
+    ChatBaseWidget.embed({
+        chatbotId: chatbotId,
+        position: 'bottom-right',
+        width: '400px',
+        height: '600px'
+    });
+}
+```
+
+### Widget Removal
+
+For floating widgets, you can remove them programmatically:
+
+```javascript
+// Remove floating widgets
+const floatingButtons = document.querySelectorAll('[style*="position: fixed"]');
+const floatingContainers = document.querySelectorAll('[style*="z-index: 9998"]');
+
+floatingButtons.forEach(btn => {
+    if (btn.innerHTML === '💬') btn.remove();
+});
+floatingContainers.forEach(container => container.remove());
+```
+
+## Styling and Customization
+
+### Widget Appearance
+
+The widget appearance is controlled by the `widget.html` page and can be customized by:
+
+1. Modifying the CSS in `widget.html`
+2. Passing theme parameters via URL
+3. Using CSS custom properties (future enhancement)
+
+### Responsive Design
+
+The widget is fully responsive and adapts to different screen sizes:
+
+- Mobile: Optimized for touch interactions
+- Desktop: Hover effects and keyboard shortcuts
+- Tablet: Balanced experience
+
+## Security Features
+
+### Iframe Sandbox
+
+The widget iframe uses security attributes:
+
+```html
+allow="microphone; camera"
+sandbox="allow-scripts allow-same-origin allow-forms"
+```
+
+### CORS-Free Architecture
+
+- No cross-origin requests from embedded scripts
+- All API communication happens server-side within the iframe
+- Secure by design
+
+## Error Handling
 
 The widget includes comprehensive error handling:
 
-- **Network errors** - Shows connection error message
-- **Invalid chatbot ID** - Graceful fallback to default config
-- **API errors** - Displays appropriate error messages
-- **Missing configuration** - Uses sensible defaults
+- Network failures
+- Invalid chatbot IDs
+- API errors
+- Configuration issues
 
-## 📱 Responsive Design
+## Browser Support
 
-The widget is fully responsive and works on:
+- Chrome 70+
+- Firefox 65+
+- Safari 12+
+- Edge 79+
 
-- **Desktop computers** - Full-featured chat interface
-- **Tablets** - Optimized touch interactions
-- **Mobile phones** - Responsive layout and sizing
-- **All screen sizes** - Adaptive positioning and scaling
+## Testing
 
-## 🚀 Integration Examples
+Use the test page at `https://fast-bulldog-662.convex.app/test-embed.html` to:
 
-### WordPress
-```php
-// Add to your theme's functions.php or use a plugin
-function add_chatbot_widget() {
-    echo '<script src="https://your-domain.com/widget.js" data-chatbot-id="your_id" data-api-url="https://your-domain.com"></script>';
-}
-add_action('wp_footer', 'add_chatbot_widget');
+- Test different integration methods
+- Verify chatbot configurations
+- Debug embedding issues
+- Preview widget appearance
+
+## Migration from Old Widget
+
+If migrating from the old script-based widget:
+
+### Old Method (CORS Issues)
+```html
+<script src="/widget.js" data-chatbot-id="..."></script>
 ```
 
-### React
-```jsx
-import { useEffect } from 'react';
-
-function ChatbotWidget({ chatbotId }) {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://your-domain.com/widget.js';
-    script.setAttribute('data-chatbot-id', chatbotId);
-    script.setAttribute('data-api-url', 'https://your-domain.com');
-    document.head.appendChild(script);
-    
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, [chatbotId]);
-
-  return null;
-}
-```
-
-### Vue.js
-```vue
-<template>
-  <div id="app">
-    <!-- Your app content -->
-  </div>
-</template>
-
+### New Method (CORS-Free)
+```html
+<script src="https://fast-bulldog-662.convex.app/embed.js"></script>
 <script>
-export default {
-  mounted() {
-    this.loadChatbot();
-  },
-  methods: {
-    loadChatbot() {
-      const script = document.createElement('script');
-      script.src = 'https://your-domain.com/widget.js';
-      script.setAttribute('data-chatbot-id', 'your_chatbot_id');
-      script.setAttribute('data-api-url', 'https://your-domain.com');
-      document.head.appendChild(script);
-    }
-  }
-}
+    ChatBaseWidget.embed({
+        chatbotId: 'your-chatbot-id',
+        position: 'bottom-right'
+    });
 </script>
 ```
 
-### Shopify
-```liquid
-<!-- Add to your theme's layout/theme.liquid before </body> -->
-<script 
-  src="https://your-domain.com/widget.js"
-  data-chatbot-id="your_chatbot_id"
-  data-api-url="https://your-domain.com"
-  data-primary-color="{{ settings.accent_color }}"
-  data-theme="light">
-</script>
-```
-
-## 🎯 Best Practices
-
-1. **Performance** - The widget loads asynchronously and won't block page rendering
-2. **SEO-friendly** - No impact on search engine optimization
-3. **Accessibility** - Includes proper ARIA labels and keyboard navigation
-4. **Privacy** - Session data is stored locally, respects user privacy
-5. **Customization** - Inherits your site's design system when configured properly
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-**Widget not appearing:**
-- Check that the chatbot ID is correct
-- Verify the API URL is accessible
-- Check browser console for errors
+1. **Widget not appearing**: Check that the script loads successfully
+2. **Chat not working**: Verify chatbot ID is correct
+3. **Styling issues**: Check container CSS for conflicts
+4. **Mobile problems**: Ensure viewport meta tag is set
 
-**CORS errors:**
-- Ensure you're using the latest version of the widget
-- Check that your API domain is correctly configured
+### Debug Mode
 
-**Styling conflicts:**
-- Use specific CSS selectors to override widget styles
-- Check for conflicting z-index values
+Add `?debug=true` to the widget URL for additional logging:
 
-**Connection issues:**
-- Verify your chatbot is active in the admin panel
-- Check network connectivity
-- Ensure the API endpoints are responding correctly
+```html
+<iframe src="https://fast-bulldog-662.convex.app/widget.html?chatbotId=test&debug=true">
+```
 
-## 📞 Support
+## Performance
 
-For technical support or questions about the widget integration:
+### Loading Speed
 
-1. Check the browser console for error messages
-2. Verify all configuration attributes are correct
-3. Test with a simple HTML page first
-4. Contact support with specific error details and reproduction steps 
+- Lazy iframe loading
+- Minimal JavaScript footprint
+- Cached resources
+- Optimized API calls
+
+### Resource Usage
+
+- ~50KB total download size
+- Minimal memory footprint
+- Efficient DOM updates
+- Smart caching
+
+## Support
+
+For technical support or questions:
+
+1. Check the test page for working examples
+2. Verify API endpoints are accessible
+3. Test with different chatbot IDs
+4. Review browser console for errors
+
+---
+
+**Note**: This iframe-based architecture is the recommended approach for all new integrations as it provides better security, reliability, and compatibility compared to the previous script injection method. 
