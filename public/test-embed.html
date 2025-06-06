@@ -3,170 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot Widget Test</title>
+    <title>Tree Chat Widget Test</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
             padding: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: white;
         }
+        
         .container {
             max-width: 800px;
             margin: 0 auto;
+        }
+        
+        .hero {
             text-align: center;
+            margin-bottom: 60px;
         }
-        h1 {
+        
+        .hero h1 {
             font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        p {
+        
+        .hero p {
             font-size: 1.2rem;
-            margin-bottom: 2rem;
             opacity: 0.9;
+            line-height: 1.6;
         }
+        
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin: 4rem 0;
+            gap: 30px;
+            margin-bottom: 60px;
         }
+        
         .feature {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 16px;
             backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        
         .feature h3 {
-            margin-top: 0;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
         }
-        .embed-code {
-            background: rgba(0,0,0,0.2);
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin: 2rem 0;
-            font-family: 'Courier New', monospace;
-            text-align: left;
-            overflow-x: auto;
-            border: 1px solid rgba(255,255,255,0.2);
+        
+        .feature p {
+            opacity: 0.8;
+            line-height: 1.6;
         }
-        .embed-code code {
-            color: #ffd700;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        .api-info {
-            background: rgba(255,255,255,0.1);
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 16px;
             backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 15px;
-            margin: 2rem 0;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
         }
-        .endpoint {
-            background: rgba(0,0,0,0.2);
-            padding: 1rem;
+        
+        .test-section h2 {
+            margin-bottom: 20px;
+        }
+        
+        .test-section p {
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        
+        .cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .cta:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .widget-demo {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
             border-radius: 8px;
-            margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards 2s;
         }
-        .method {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-right: 0.5rem;
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .get { background: #28a745; }
-        .post { background: #007bff; }
+        
+        .demo-content {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .demo-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 Chatbot Widget Demo</h1>
-        <p>Experience our intelligent chatbot widget with real-time responses and beautiful UI.</p>
+        <div class="hero">
+            <h1>Tree Chat Widget</h1>
+            <p>Experience the future of conversational AI with our Tree-powered chat widget. Built with modern web technologies and designed for seamless integration.</p>
+        </div>
         
         <div class="features">
             <div class="feature">
-                <h3>🎨 Customizable Design</h3>
-                <p>Fully customizable colors, themes, and positioning to match your brand.</p>
+                <h3>🎨 Modern Design</h3>
+                <p>Beautiful, responsive UI that adapts to your brand colors and themes. Supports both light and dark modes.</p>
             </div>
+            
             <div class="feature">
-                <h3>📱 Responsive</h3>
-                <p>Works perfectly on all devices and screen sizes.</p>
+                <h3>⚡ Lightning Fast</h3>
+                <p>Optimized for performance with lazy loading, smart caching, and efficient DOM manipulation.</p>
             </div>
-            <div class="feature">
-                <h3>⚡ Real-time Chat</h3>
-                <p>Instant responses with typing indicators and smooth animations.</p>
-            </div>
+            
             <div class="feature">
                 <h3>🔧 Easy Integration</h3>
-                <p>Simple one-line embed code for any website.</p>
-            </div>
-        </div>
-
-        <div class="api-info">
-            <h2>🚀 API Integration</h2>
-            <p>Use these endpoints to integrate the chatbot into any system:</p>
-            
-            <div class="endpoint">
-                <span class="method get">GET</span>
-                <strong>/api/chatbot/{chatbotId}</strong> - Get chatbot configuration
+                <p>Simple one-line integration with any website. No complex setup or configuration required.</p>
             </div>
             
-            <div class="endpoint">
-                <span class="method post">POST</span>
-                <strong>/api/chat</strong> - Send message and get response
+            <div class="feature">
+                <h3>🛡️ Secure & Private</h3>
+                <p>Enterprise-grade security with CORS support and optional API key authentication.</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test the Widget</h2>
+            <p>The chat widget is now active in the bottom-right corner. Click it to start a conversation and experience the seamless AI interaction.</p>
+            
+            <div class="demo-content">
+                <div class="demo-text">
+                    <strong>Try asking:</strong><br>
+                    • "What can you help me with?"<br>
+                    • "Tell me about your features"<br>
+                    • "How does this widget work?"<br>
+                    • Or any other question you'd like!
+                </div>
             </div>
             
-            <div class="endpoint">
-                <span class="method get">GET</span>
-                <strong>/api/embed/{chatbotId}</strong> - Get embed code for any website
-            </div>
+            <a href="https://chatit.cloud" class="cta">
+                <span>🚀</span>
+                <span>Get Your Own Widget</span>
+            </a>
         </div>
-
-        <div class="embed-code">
-            <h3>📋 Embed Code Example</h3>
-            <code>
-&lt;script&gt;<br>
-(function() {<br>
-&nbsp;&nbsp;var script = document.createElement('script');<br>
-&nbsp;&nbsp;script.src = 'https://your-domain.com/widget.js';<br>
-&nbsp;&nbsp;script.setAttribute('data-chatbot-id', 'your-chatbot-id');<br>
-&nbsp;&nbsp;script.setAttribute('data-api-url', 'https://your-domain.com');<br>
-&nbsp;&nbsp;document.head.appendChild(script);<br>
-})();<br>
-&lt;/script&gt;
-            </code>
-        </div>
-
-        <p style="margin-top: 3rem;">
-            👈 Look for the chat widget in the bottom right corner!<br>
-            Click it to start a conversation.
-        </p>
+    </div>
+    
+    <div class="widget-demo">
+        👋 Chat widget ready! Click to test →
     </div>
 
-    <!-- Chatbot Widget - Replace 'YOUR_CHATBOT_ID' with actual chatbot ID -->
+    <!-- Tree Chat Widget Integration -->
     <script 
         src="/widget.js"
-        data-chatbot-id="YOUR_CHATBOT_ID"
-        data-api-url="http://localhost:3000"
-        data-theme="light"
-        data-primary-color="#667eea"
+        data-chatbot-id="replace-with-real-chatbot-id"
+        data-api-url="https://fast-bulldog-662.convex.app"
+        data-chatbot-name="Tree Assistant"
+        data-primary-color="#2563eb"
         data-position="bottom-right"
-        data-size="medium"
-        data-welcome-message="Hi! I'm your AI assistant. How can I help you today?"
+        data-welcome-message="Hi! I'm Tree Assistant. How can I help you today?"
         data-placeholder="Type your message..."
         data-show-branding="true"
         data-border-radius="12"
         data-font-family="system-ui"
-        data-animation="bounce">
-    </script>
+        data-animation="bounce"
+        data-theme="light"
+    ></script>
 </body>
 </html> 

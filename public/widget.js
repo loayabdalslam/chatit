@@ -1,663 +1,758 @@
-// Enhanced Chatbot Widget Script
+// Tree-powered Chat Widget - Modular AI Integration
 (function() {
   'use strict';
 
-  const DEFAULT_CONFIG = {
-    chatbotId: '',
-    apiUrl: '',
-    theme: 'light',
-    primaryColor: '#2563eb',
-    position: 'bottom-right',
-    size: 'medium',
-    welcomeMessage: 'Hi! How can I help you today?',
-    placeholder: 'Type your message...',
-    showBranding: true,
-    borderRadius: 12,
-    fontFamily: 'system-ui',
-    animation: 'bounce',
-    chatbotName: 'Assistant'
+  // Configuration - Following Tree patterns
+  const CONFIG = {
+    defaults: {
+      theme: 'light',
+      primaryColor: '#2563eb',
+      position: 'bottom-right',
+      welcomeMessage: 'Hi! How can I help you today?',
+      placeholder: 'Type your message...',
+      showBranding: true,
+      borderRadius: 12,
+      fontFamily: 'system-ui',
+      animation: 'bounce',
+      chatbotName: 'Assistant'
+    },
+    api: {
+      timeout: 30000,
+      retries: 3,
+      retryDelay: 1000
+    }
   };
 
-  class ChatWidget {
-    constructor(config) {
-      this.config = { ...DEFAULT_CONFIG, ...config };
-      this.isOpen = false;
-      this.sessionId = 'widget-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-      this.messages = [];
-      this.isTyping = false;
-      this.chatbotInfo = null;
-      this.initWithConfig();
+  // Utilities - RORO pattern
+  const utils = {
+    generateSessionId: () => `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    
+    formatTime: (timestamp) => new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit', minute: '2-digit'
+    }).format(new Date(timestamp)),
+
+    adjustColor: ({ color, amount = 0 }) => {
+      const num = parseInt(color.replace('#', ''), 16);
+      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+      const g = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amount));
+      const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+      return `#${(0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    },
+
+    sanitize: (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    },
+
+    debounce: (func, wait) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+      };
+    }
+  };
+
+  // API Manager
+  class APIManager {
+    constructor({ apiUrl, chatbotId }) {
+      this.apiUrl = apiUrl;
+      this.chatbotId = chatbotId;
+      this.sessionId = utils.generateSessionId();
     }
 
-    async initWithConfig() {
-      try {
-        // Fetch chatbot configuration
-        await this.fetchChatbotInfo();
-        this.init();
-      } catch (error) {
-        console.error('Failed to fetch chatbot config:', error);
-        // Fallback to default config
-        this.init();
-      }
-    }
-
-    async fetchChatbotInfo() {
-      if (!this.config.chatbotId) {
-        throw new Error('Chatbot ID is required');
-      }
+    async request({ endpoint, method = 'GET', data = null }) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.api.timeout);
 
       try {
-        const response = await fetch(`${this.config.apiUrl}/api/chatbot/${this.config.chatbotId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const options = {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal
+        };
+
+        if (data) options.body = JSON.stringify(data);
+
+        const response = await fetch(`${this.apiUrl}${endpoint}`, options);
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
 
-        this.chatbotInfo = await response.json();
-        
-        // Update config with fetched data
-        if (this.chatbotInfo.widgetConfig) {
-          this.config = {
-            ...this.config,
-            ...this.chatbotInfo.widgetConfig,
-            chatbotName: this.chatbotInfo.name,
-            welcomeMessage: this.chatbotInfo.widgetConfig.welcomeMessage || `Hi! I'm ${this.chatbotInfo.name}. How can I help you today?`
-          };
-        } else {
-          this.config.chatbotName = this.chatbotInfo.name;
-          this.config.welcomeMessage = `Hi! I'm ${this.chatbotInfo.name}. How can I help you today?`;
-        }
+        return await response.json();
       } catch (error) {
-        console.error('Error fetching chatbot info:', error);
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - please try again');
+        }
         throw error;
       }
     }
 
-    init() {
-      this.createStyles();
-      this.createWidget();
-      this.attachEventListeners();
-      this.loadPreviousMessages();
+    async getChatbotInfo() {
+      return this.request({ endpoint: `/api/chatbot/${this.chatbotId}` });
+    }
+
+    async sendMessage({ message }) {
+      return this.request({
+        endpoint: '/api/chat',
+        method: 'POST',
+        data: { chatbotId: this.chatbotId, message, sessionId: this.sessionId }
+      });
+    }
+  }
+
+  // Message Manager
+  class MessageManager {
+    constructor() {
+      this.messages = [];
+    }
+
+    add({ content, sender, timestamp = Date.now() }) {
+      const message = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        content, sender, timestamp
+      };
+      this.messages.push(message);
+      return message;
+    }
+
+    getAll() {
+      return [...this.messages];
+    }
+
+    save(sessionId) {
+      try {
+        localStorage.setItem(`widget-messages-${sessionId}`, JSON.stringify(this.messages));
+      } catch (e) {
+        console.warn('Failed to save messages:', e);
+      }
+    }
+
+    load(sessionId) {
+      try {
+        const saved = localStorage.getItem(`widget-messages-${sessionId}`);
+        if (saved) this.messages = JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to load messages:', e);
+      }
+    }
+  }
+
+  // UI Manager
+  class UIManager {
+    constructor({ config }) {
+      this.config = config;
+      this.isOpen = false;
+      this.container = null;
+      this.messagesEl = null;
+      this.inputEl = null;
     }
 
     createStyles() {
+      if (document.getElementById('tree-widget-styles')) return;
+
       const style = document.createElement('style');
+      style.id = 'tree-widget-styles';
+      
+      const { primaryColor, theme, fontFamily, borderRadius, position } = this.config;
+      const isDark = theme === 'dark';
+      
       style.textContent = `
-        .chatbot-widget-container {
+        .tree-widget {
           position: fixed;
-          z-index: 9999;
-          font-family: ${this.config.fontFamily}, -apple-system, BlinkMacSystemFont, sans-serif;
+          z-index: 999999;
+          font-family: ${fontFamily}, system-ui, sans-serif;
+          ${this.getPositionCSS(position)}
         }
         
-        .chatbot-widget-button {
-          width: ${this.getSizePixels()};
-          height: ${this.getSizePixels()};
-          border-radius: ${this.config.borderRadius}px;
-          background: ${this.config.primaryColor};
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: ${this.getFontSize()};
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
+        .tree-widget-btn {
+          width: 60px; height: 60px;
+          border-radius: ${borderRadius}px;
+          background: linear-gradient(135deg, ${primaryColor}, ${utils.adjustColor({ color: primaryColor, amount: -20 })});
+          border: none; cursor: pointer;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+          display: flex; align-items: center; justify-content: center;
+          color: white; font-size: 24px;
+          transition: all 0.3s ease;
         }
         
-        .chatbot-widget-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-          transform: translateX(-100%);
-          transition: transform 0.6s;
-        }
-        
-        .chatbot-widget-button:hover::before {
-          transform: translateX(100%);
-        }
-        
-        .chatbot-widget-button:hover {
+        .tree-widget-btn:hover {
           transform: scale(1.05);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.2);
         }
         
-        .chatbot-widget-window {
+        .tree-widget-btn.bounce {
+          animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-10px); }
+          60% { transform: translateY(-5px); }
+        }
+        
+        .tree-widget-window {
           position: absolute;
-          width: 380px;
-          height: 520px;
-          background: ${this.config.theme === 'dark' ? '#1f2937' : 'white'};
-          border-radius: ${this.config.borderRadius}px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-          display: none;
-          flex-direction: column;
+          width: 380px; height: 580px;
+          background: ${isDark ? '#1f2937' : 'white'};
+          border-radius: ${borderRadius}px;
+          box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+          display: none; flex-direction: column;
           overflow: hidden;
-          transform: scale(0.95);
-          opacity: 0;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: scale(0.9); opacity: 0;
+          transition: all 0.3s ease;
+          ${this.getWindowPositionCSS(position)}
         }
         
-        .chatbot-widget-window.open {
-          transform: scale(1);
-          opacity: 1;
+        .tree-widget-window.open {
+          transform: scale(1); opacity: 1;
         }
         
-        .chatbot-widget-header {
-          background: linear-gradient(135deg, ${this.config.primaryColor}, ${this.adjustColor(this.config.primaryColor, -20)});
-          color: white;
-          padding: 20px;
-          font-weight: 600;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .tree-widget-header {
+          background: linear-gradient(135deg, ${primaryColor}, ${utils.adjustColor({ color: primaryColor, amount: -20 })});
+          color: white; padding: 20px;
+          display: flex; justify-content: space-between; align-items: center;
         }
         
-        .chatbot-widget-header-title {
-          font-size: 16px;
-          font-weight: 600;
+        .tree-widget-title {
+          font-size: 18px; font-weight: 600;
         }
         
-        .chatbot-widget-close {
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          color: white;
-          font-size: 18px;
-          cursor: pointer;
-          padding: 8px;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: all 0.2s;
+        .tree-widget-close {
+          background: rgba(255,255,255,0.1);
+          border: none; color: white; font-size: 20px;
+          cursor: pointer; padding: 8px;
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 50%; transition: all 0.2s;
         }
         
-        .chatbot-widget-close:hover {
-          background: rgba(255, 255, 255, 0.2);
+        .tree-widget-close:hover {
+          background: rgba(255,255,255,0.2);
           transform: rotate(90deg);
         }
         
-        .chatbot-widget-messages {
-          flex: 1;
-          padding: 20px;
+        .tree-widget-messages {
+          flex: 1; padding: 20px;
           overflow-y: auto;
-          background: ${this.config.theme === 'dark' ? '#374151' : '#f8fafc'};
+          background: ${isDark ? '#374151' : '#f8fafc'};
           scroll-behavior: smooth;
         }
         
-        .chatbot-widget-messages::-webkit-scrollbar {
-          width: 6px;
+        .tree-message {
+          margin-bottom: 16px;
+          animation: slideIn 0.3s ease;
         }
         
-        .chatbot-widget-messages::-webkit-scrollbar-track {
-          background: transparent;
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         
-        .chatbot-widget-messages::-webkit-scrollbar-thumb {
-          background: rgba(0,0,0,0.2);
-          border-radius: 3px;
+        .tree-message.user {
+          text-align: right;
         }
         
-        .chatbot-widget-input-container {
-          padding: 20px;
-          border-top: 1px solid ${this.config.theme === 'dark' ? '#4b5563' : '#e2e8f0'};
-          background: ${this.config.theme === 'dark' ? '#1f2937' : 'white'};
-          display: flex;
-          gap: 12px;
-          align-items: flex-end;
+        .tree-message-bubble {
+          display: inline-block; max-width: 80%;
+          padding: 12px 16px; border-radius: 18px;
+          font-size: 14px; line-height: 1.4;
+          word-wrap: break-word;
         }
         
-        .chatbot-widget-input {
-          flex: 1;
+        .tree-message.user .tree-message-bubble {
+          background: ${primaryColor}; color: white;
+          border-bottom-right-radius: 4px;
+        }
+        
+        .tree-message.bot .tree-message-bubble {
+          background: ${isDark ? '#4b5563' : 'white'};
+          color: ${isDark ? 'white' : '#374151'};
+          border-bottom-left-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tree-message-time {
+          font-size: 11px;
+          color: ${isDark ? '#9ca3af' : '#6b7280'};
+          margin-top: 4px;
+        }
+        
+        .tree-typing {
+          display: flex; align-items: center;
           padding: 12px 16px;
-          border: 2px solid ${this.config.theme === 'dark' ? '#4b5563' : '#e2e8f0'};
-          border-radius: 25px;
-          background: ${this.config.theme === 'dark' ? '#374151' : 'white'};
-          color: ${this.config.theme === 'dark' ? 'white' : 'black'};
-          outline: none;
-          font-family: inherit;
-          resize: none;
-          min-height: 20px;
-          max-height: 100px;
-          transition: border-color 0.2s;
+          background: ${isDark ? '#4b5563' : 'white'};
+          border-radius: 18px; border-bottom-left-radius: 4px;
+          max-width: 80px; margin-bottom: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .chatbot-widget-input::placeholder {
-          color: ${this.config.theme === 'dark' ? '#9ca3af' : '#6b7280'};
+        .tree-typing-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: ${isDark ? '#9ca3af' : '#6b7280'};
+          margin: 0 2px; animation: typing 1.4s infinite;
         }
         
-        .chatbot-widget-input:focus {
-          border-color: ${this.config.primaryColor};
+        .tree-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .tree-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-10px); }
         }
         
-        .chatbot-widget-send {
-          padding: 12px;
-          background: ${this.config.primaryColor};
-          color: white;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
+        .tree-widget-input-area {
+          padding: 20px;
+          background: ${isDark ? '#1f2937' : 'white'};
+          border-top: 1px solid ${isDark ? '#374151' : '#e5e7eb'};
+        }
+        
+        .tree-input-wrapper {
+          display: flex; gap: 12px; align-items: flex-end;
+        }
+        
+        .tree-widget-input {
+          flex: 1; padding: 12px 16px;
+          border: 2px solid ${isDark ? '#374151' : '#e5e7eb'};
+          border-radius: 24px;
+          background: ${isDark ? '#374151' : 'white'};
+          color: ${isDark ? 'white' : '#374151'};
+          font-size: 14px; resize: none; outline: none;
           transition: all 0.2s;
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          max-height: 120px; min-height: 44px;
         }
         
-        .chatbot-widget-send:hover {
-          background: ${this.adjustColor(this.config.primaryColor, -10)};
+        .tree-widget-input:focus {
+          border-color: ${primaryColor};
+          box-shadow: 0 0 0 3px ${primaryColor}20;
+        }
+        
+        .tree-send-btn {
+          width: 44px; height: 44px; border-radius: 50%;
+          background: ${primaryColor}; border: none; color: white;
+          cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
+          transition: all 0.2s; flex-shrink: 0;
+        }
+        
+        .tree-send-btn:hover:not(:disabled) {
+          background: ${utils.adjustColor({ color: primaryColor, amount: -20 })};
           transform: scale(1.05);
         }
         
-        .chatbot-widget-send:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
+        .tree-send-btn:disabled {
+          opacity: 0.5; cursor: not-allowed;
         }
         
-        .chatbot-widget-message {
-          margin-bottom: 16px;
-          display: flex;
-          align-items: flex-end;
-          gap: 8px;
+        .tree-widget-branding {
+          text-align: center; padding: 12px; font-size: 12px;
+          color: ${isDark ? '#9ca3af' : '#6b7280'};
+          background: ${isDark ? '#374151' : '#f9fafb'};
         }
         
-        .chatbot-widget-message-user {
-          justify-content: flex-end;
+        .tree-widget-branding a {
+          color: ${primaryColor}; text-decoration: none;
         }
         
-        .chatbot-widget-message-bot {
-          justify-content: flex-start;
+        .tree-error {
+          background: #fef2f2; color: #dc2626;
+          padding: 12px 16px; border-radius: 8px;
+          margin: 12px; font-size: 14px; text-align: center;
+          border: 1px solid #fecaca;
         }
         
-        .chatbot-widget-message-bubble {
-          max-width: 75%;
-          padding: 12px 16px;
-          border-radius: 18px;
-          font-size: 14px;
-          line-height: 1.4;
-          word-wrap: break-word;
-          animation: messageSlideIn 0.3s ease-out;
-        }
-        
-        .chatbot-widget-message-user .chatbot-widget-message-bubble {
-          background: ${this.config.primaryColor};
-          color: white;
-          border-bottom-right-radius: 6px;
-        }
-        
-        .chatbot-widget-message-bot .chatbot-widget-message-bubble {
-          background: ${this.config.theme === 'dark' ? '#4b5563' : 'white'};
-          color: ${this.config.theme === 'dark' ? 'white' : '#1f2937'};
-          border: ${this.config.theme === 'dark' ? 'none' : '1px solid #e2e8f0'};
-          border-bottom-left-radius: 6px;
-        }
-        
-        .chatbot-widget-timestamp {
-          font-size: 11px;
-          color: ${this.config.theme === 'dark' ? '#9ca3af' : '#6b7280'};
-          margin-top: 4px;
-          text-align: center;
-        }
-        
-        .chatbot-widget-typing {
-          display: flex;
-          gap: 4px;
-          padding: 4px 0;
-        }
-        
-        .chatbot-widget-typing-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: ${this.config.theme === 'dark' ? '#9ca3af' : '#6b7280'};
-          animation: typingDot 1.4s infinite ease-in-out;
-        }
-        
-        .chatbot-widget-typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .chatbot-widget-typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        
-        @keyframes typingDot {
-          0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-        
-        @keyframes messageSlideIn {
-          from { transform: translateY(10px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes ${this.config.animation} {
-          0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-          40%, 43% { transform: translate3d(0, -30px, 0); }
-          70% { transform: translate3d(0, -15px, 0); }
-          90% { transform: translate3d(0, -4px, 0); }
-        }
-        
-        .chatbot-widget-button.${this.config.animation} {
-          animation: ${this.config.animation} 2s ease-in-out infinite;
+        @media (max-width: 480px) {
+          .tree-widget-window {
+            width: calc(100vw - 20px);
+            height: calc(100vh - 20px);
+            max-width: 380px; max-height: 580px;
+          }
         }
       `;
+      
       document.head.appendChild(style);
     }
 
-    adjustColor(color, amount) {
-      return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
-    }
-
-    getSizePixels() {
-      const sizes = { small: '50px', medium: '60px', large: '70px' };
-      return sizes[this.config.size] || sizes.medium;
-    }
-
-    getFontSize() {
-      const sizes = { small: '18px', medium: '20px', large: '24px' };
-      return sizes[this.config.size] || sizes.medium;
-    }
-
-    getPosition() {
+    getPositionCSS(position) {
       const positions = {
-        'bottom-right': { bottom: '20px', right: '20px' },
-        'bottom-left': { bottom: '20px', left: '20px' },
-        'top-right': { top: '20px', right: '20px' },
-        'top-left': { top: '20px', left: '20px' }
+        'bottom-right': 'bottom: 20px; right: 20px;',
+        'bottom-left': 'bottom: 20px; left: 20px;',
+        'top-right': 'top: 20px; right: 20px;',
+        'top-left': 'top: 20px; left: 20px;'
       };
-      return positions[this.config.position] || positions['bottom-right'];
+      return positions[position] || positions['bottom-right'];
     }
 
-    getWindowPosition() {
+    getWindowPositionCSS(position) {
       const positions = {
-        'bottom-right': { bottom: '80px', right: '20px' },
-        'bottom-left': { bottom: '80px', left: '20px' },
-        'top-right': { top: '80px', right: '20px' },
-        'top-left': { top: '80px', left: '20px' }
+        'bottom-right': 'bottom: 80px; right: 0;',
+        'bottom-left': 'bottom: 80px; left: 0;',
+        'top-right': 'top: 80px; right: 0;',
+        'top-left': 'top: 80px; left: 0;'
       };
-      return positions[this.config.position] || positions['bottom-right'];
+      return positions[position] || positions['bottom-right'];
     }
 
-    createWidget() {
-      // Create container
+    create() {
       this.container = document.createElement('div');
-      this.container.className = 'chatbot-widget-container';
-      Object.assign(this.container.style, this.getPosition());
-
-      // Create button
-      this.button = document.createElement('button');
-      this.button.className = `chatbot-widget-button ${this.config.animation}`;
-      this.button.innerHTML = '💬';
-      this.button.setAttribute('aria-label', `Open ${this.config.chatbotName} chat`);
-
-      // Create window
-      this.window = document.createElement('div');
-      this.window.className = 'chatbot-widget-window';
-      Object.assign(this.window.style, this.getWindowPosition());
-
-      // Create header
-      this.header = document.createElement('div');
-      this.header.className = 'chatbot-widget-header';
-      this.header.innerHTML = `
-        <div class="chatbot-widget-header-title">${this.config.chatbotName}</div>
-        <button class="chatbot-widget-close" aria-label="Close chat">×</button>
+      this.container.className = 'tree-widget';
+      
+      this.container.innerHTML = `
+        <button class="tree-widget-btn ${this.config.animation}" aria-label="Open chat">
+          💬
+        </button>
+        
+        <div class="tree-widget-window">
+          <div class="tree-widget-header">
+            <div class="tree-widget-title">${utils.sanitize(this.config.chatbotName)}</div>
+            <button class="tree-widget-close" aria-label="Close">×</button>
+          </div>
+          
+          <div class="tree-widget-messages"></div>
+          
+          <div class="tree-widget-input-area">
+            <div class="tree-input-wrapper">
+              <textarea 
+                class="tree-widget-input" 
+                placeholder="${utils.sanitize(this.config.placeholder)}"
+                rows="1" maxlength="1000"
+              ></textarea>
+              <button class="tree-send-btn" aria-label="Send">➤</button>
+            </div>
+          </div>
+          
+          ${this.config.showBranding ? `
+            <div class="tree-widget-branding">
+              Powered by <a href="https://chatit.cloud" target="_blank">chatit.cloud</a>
+            </div>
+          ` : ''}
+        </div>
       `;
 
-      // Create messages container
-      this.messagesContainer = document.createElement('div');
-      this.messagesContainer.className = 'chatbot-widget-messages';
-
-      // Create input container
-      this.inputContainer = document.createElement('div');
-      this.inputContainer.className = 'chatbot-widget-input-container';
-
-      // Create input
-      this.input = document.createElement('textarea');
-      this.input.className = 'chatbot-widget-input';
-      this.input.placeholder = this.config.placeholder;
-      this.input.rows = 1;
-
-      // Create send button
-      this.sendButton = document.createElement('button');
-      this.sendButton.className = 'chatbot-widget-send';
-      this.sendButton.innerHTML = '➤';
-      this.sendButton.setAttribute('aria-label', 'Send message');
-
-      // Assemble widget
-      this.inputContainer.appendChild(this.input);
-      this.inputContainer.appendChild(this.sendButton);
-      
-      this.window.appendChild(this.header);
-      this.window.appendChild(this.messagesContainer);
-      this.window.appendChild(this.inputContainer);
-      
-      this.container.appendChild(this.button);
-      this.container.appendChild(this.window);
+      this.messagesEl = this.container.querySelector('.tree-widget-messages');
+      this.inputEl = this.container.querySelector('.tree-widget-input');
       
       document.body.appendChild(this.container);
+      this.attachEvents();
     }
 
-    attachEventListeners() {
-      this.button.addEventListener('click', () => this.toggle());
-      this.header.querySelector('.chatbot-widget-close').addEventListener('click', () => this.toggle());
-      this.sendButton.addEventListener('click', () => this.handleSend());
+    attachEvents() {
+      const btn = this.container.querySelector('.tree-widget-btn');
+      const closeBtn = this.container.querySelector('.tree-widget-close');
+      const sendBtn = this.container.querySelector('.tree-send-btn');
       
-      this.input.addEventListener('keydown', (e) => {
+      btn.addEventListener('click', () => this.toggle());
+      closeBtn.addEventListener('click', () => this.close());
+      sendBtn.addEventListener('click', () => this.handleSend());
+      
+      this.inputEl.addEventListener('input', utils.debounce(() => this.autoResize(), 100));
+      this.inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           this.handleSend();
         }
       });
-
-      this.input.addEventListener('input', () => {
-        this.autoResize();
-      });
     }
 
     autoResize() {
-      this.input.style.height = 'auto';
-      this.input.style.height = Math.min(this.input.scrollHeight, 100) + 'px';
-    }
-
-    handleSend() {
-      const message = this.input.value.trim();
-      if (message && !this.isTyping) {
-        this.sendMessage(message);
-        this.input.value = '';
-        this.autoResize();
-      }
+      this.inputEl.style.height = 'auto';
+      this.inputEl.style.height = `${Math.min(this.inputEl.scrollHeight, 120)}px`;
     }
 
     toggle() {
-      this.isOpen = !this.isOpen;
-      
-      if (this.isOpen) {
-        this.window.style.display = 'flex';
-        setTimeout(() => {
-          this.window.classList.add('open');
-        }, 10);
-        
-        if (this.messages.length === 0) {
-          this.addMessage(this.config.welcomeMessage, 'bot');
-        }
-        
-        setTimeout(() => {
-          this.input.focus();
-        }, 300);
-      } else {
-        this.window.classList.remove('open');
-        setTimeout(() => {
-          this.window.style.display = 'none';
-        }, 300);
-      }
+      this.isOpen ? this.close() : this.open();
     }
 
-    addMessage(content, sender, timestamp = Date.now()) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `chatbot-widget-message chatbot-widget-message-${sender}`;
+    open() {
+      if (this.isOpen) return;
       
-      const bubbleDiv = document.createElement('div');
-      bubbleDiv.className = 'chatbot-widget-message-bubble';
-      bubbleDiv.textContent = content;
+      const window = this.container.querySelector('.tree-widget-window');
+      const btn = this.container.querySelector('.tree-widget-btn');
       
-      const timestampDiv = document.createElement('div');
-      timestampDiv.className = 'chatbot-widget-timestamp';
-      timestampDiv.textContent = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      window.style.display = 'flex';
+      btn.classList.remove('bounce');
       
-      messageDiv.appendChild(bubbleDiv);
-      messageDiv.appendChild(timestampDiv);
-      this.messagesContainer.appendChild(messageDiv);
+      requestAnimationFrame(() => {
+        window.classList.add('open');
+      });
       
-      this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      this.isOpen = true;
+      this.inputEl.focus();
+      this.scrollToBottom();
+    }
+
+    close() {
+      if (!this.isOpen) return;
       
-      this.messages.push({ content, sender, timestamp });
-      this.saveMessages();
+      const window = this.container.querySelector('.tree-widget-window');
+      const btn = this.container.querySelector('.tree-widget-btn');
+      
+      window.classList.remove('open');
+      
+      setTimeout(() => {
+        window.style.display = 'none';
+        if (this.config.animation === 'bounce') {
+          btn.classList.add('bounce');
+        }
+      }, 300);
+      
+      this.isOpen = false;
+    }
+
+    showMessage({ content, sender, timestamp }) {
+      const messageEl = document.createElement('div');
+      messageEl.className = `tree-message ${sender}`;
+      
+      messageEl.innerHTML = `
+        <div class="tree-message-bubble">
+          ${utils.sanitize(content)}
+        </div>
+        <div class="tree-message-time">
+          ${utils.formatTime(timestamp)}
+        </div>
+      `;
+      
+      this.messagesEl.appendChild(messageEl);
+      this.scrollToBottom();
     }
 
     showTyping() {
-      if (document.getElementById('chatbot-typing-indicator')) return;
+      if (this.container.querySelector('.tree-typing')) return;
       
-      const typingDiv = document.createElement('div');
-      typingDiv.className = 'chatbot-widget-message chatbot-widget-message-bot';
-      typingDiv.id = 'chatbot-typing-indicator';
-      
-      const bubbleDiv = document.createElement('div');
-      bubbleDiv.className = 'chatbot-widget-message-bubble';
-      
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'chatbot-widget-typing';
-      typingIndicator.innerHTML = `
-        <div class="chatbot-widget-typing-dot"></div>
-        <div class="chatbot-widget-typing-dot"></div>
-        <div class="chatbot-widget-typing-dot"></div>
+      const typingEl = document.createElement('div');
+      typingEl.className = 'tree-typing';
+      typingEl.innerHTML = `
+        <div class="tree-typing-dot"></div>
+        <div class="tree-typing-dot"></div>
+        <div class="tree-typing-dot"></div>
       `;
       
-      bubbleDiv.appendChild(typingIndicator);
-      typingDiv.appendChild(bubbleDiv);
-      this.messagesContainer.appendChild(typingDiv);
-      
-      this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+      this.messagesEl.appendChild(typingEl);
+      this.scrollToBottom();
     }
 
     hideTyping() {
-      const typingIndicator = document.getElementById('chatbot-typing-indicator');
-      if (typingIndicator) {
-        typingIndicator.remove();
+      const typingEl = this.container.querySelector('.tree-typing');
+      if (typingEl) typingEl.remove();
+    }
+
+    showError(message) {
+      const errorEl = document.createElement('div');
+      errorEl.className = 'tree-error';
+      errorEl.textContent = message;
+      
+      this.messagesEl.appendChild(errorEl);
+      this.scrollToBottom();
+      
+      setTimeout(() => {
+        if (errorEl.parentNode) errorEl.remove();
+      }, 5000);
+    }
+
+    scrollToBottom() {
+      requestAnimationFrame(() => {
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+      });
+    }
+
+    enableInput() {
+      this.inputEl.disabled = false;
+      this.container.querySelector('.tree-send-btn').disabled = false;
+    }
+
+    disableInput() {
+      this.inputEl.disabled = true;
+      this.container.querySelector('.tree-send-btn').disabled = true;
+    }
+
+    clearInput() {
+      this.inputEl.value = '';
+      this.autoResize();
+    }
+
+    handleSend() {
+      const message = this.inputEl.value.trim();
+      if (message && this.onSend) {
+        this.onSend(message);
+      }
+    }
+  }
+
+  // Main Widget Class
+  class TreeChatWidget {
+    constructor({ chatbotId, apiUrl, ...customConfig }) {
+      if (!chatbotId || !apiUrl) {
+        throw new Error('TreeChatWidget: chatbotId and apiUrl required');
+      }
+
+      this.config = { ...CONFIG.defaults, ...customConfig };
+      this.api = new APIManager({ apiUrl, chatbotId });
+      this.messages = new MessageManager();
+      this.ui = new UIManager({ config: this.config });
+      
+      this.isReady = false;
+      this.init();
+    }
+
+    async init() {
+      try {
+        await this.loadConfig();
+        
+        this.ui.createStyles();
+        this.ui.create();
+        this.ui.onSend = (message) => this.sendMessage(message);
+        
+        this.loadMessages();
+        
+        if (this.messages.getAll().length === 0) {
+          const welcome = this.messages.add({
+            content: this.config.welcomeMessage,
+            sender: 'bot'
+          });
+          this.ui.showMessage(welcome);
+        } else {
+          this.restoreMessages();
+        }
+        
+        this.isReady = true;
+        
+      } catch (error) {
+        console.error('TreeWidget init failed:', error);
+        this.ui.showError('Failed to initialize chat');
+      }
+    }
+
+    async loadConfig() {
+      try {
+        const info = await this.api.getChatbotInfo();
+        
+        if (info.widgetConfig) {
+          this.config = { ...this.config, ...info.widgetConfig };
+        }
+        
+        if (info.name) {
+          this.config.chatbotName = info.name;
+        }
+        
+      } catch (error) {
+        console.warn('Failed to load config, using defaults:', error);
       }
     }
 
     async sendMessage(content) {
-      this.addMessage(content, 'user');
-      this.showTyping();
-      this.isTyping = true;
-      this.sendButton.disabled = true;
-      
+      if (!content.trim() || !this.isReady) return;
+
       try {
-        const response = await fetch(`${this.config.apiUrl}/api/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chatbotId: this.config.chatbotId,
-            message: content,
-            sessionId: this.sessionId
-          })
+        this.ui.disableInput();
+        
+        const userMsg = this.messages.add({ content, sender: 'user' });
+        this.ui.showMessage(userMsg);
+        this.ui.clearInput();
+        
+        this.ui.showTyping();
+        
+        const response = await this.sendWithRetry(content);
+        
+        this.ui.hideTyping();
+        
+        const botMsg = this.messages.add({
+          content: response.response || 'Thank you for your message!',
+          sender: 'bot'
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
-
-        const data = await response.json();
         
-        this.hideTyping();
+        this.ui.showMessage(botMsg);
+        this.saveMessages();
         
-        if (data.response) {
-          this.addMessage(data.response, 'bot');
-        } else if (data.error) {
-          this.addMessage(`Error: ${data.error}`, 'bot');
-        } else {
-          this.addMessage('Sorry, I could not process your request.', 'bot');
-        }
       } catch (error) {
-        console.error('Chat error:', error);
-        this.hideTyping();
-        this.addMessage('Sorry, I\'m having trouble connecting. Please try again later.', 'bot');
+        this.ui.hideTyping();
+        this.ui.showError('Failed to send message. Please try again.');
+        console.error('Send error:', error);
       } finally {
-        this.isTyping = false;
-        this.sendButton.disabled = false;
+        this.ui.enableInput();
+      }
+    }
+
+    async sendWithRetry(content, attempt = 1) {
+      try {
+        return await this.api.sendMessage({ message: content });
+      } catch (error) {
+        if (attempt < CONFIG.api.retries) {
+          await new Promise(resolve => 
+            setTimeout(resolve, CONFIG.api.retryDelay * attempt)
+          );
+          return this.sendWithRetry(content, attempt + 1);
+        }
+        throw error;
       }
     }
 
     saveMessages() {
-      try {
-        localStorage.setItem(`chatbot_messages_${this.config.chatbotId}`, JSON.stringify(this.messages));
-      } catch (e) {
-        console.warn('Could not save messages to localStorage');
-      }
+      this.messages.save(this.api.sessionId);
     }
 
-    loadPreviousMessages() {
-      try {
-        const saved = localStorage.getItem(`chatbot_messages_${this.config.chatbotId}`);
-        if (saved) {
-          const messages = JSON.parse(saved);
-          messages.forEach(msg => {
-            if (msg.sender !== 'bot' || msg.content !== this.config.welcomeMessage) {
-              this.addMessage(msg.content, msg.sender, msg.timestamp);
-            }
-          });
-        }
-      } catch (e) {
-        console.warn('Could not load previous messages');
-      }
+    loadMessages() {
+      this.messages.load(this.api.sessionId);
     }
+
+    restoreMessages() {
+      this.messages.getAll().forEach(message => {
+        this.ui.showMessage(message);
+      });
+    }
+
+    open() { this.ui.open(); }
+    close() { this.ui.close(); }
+    toggle() { this.ui.toggle(); }
   }
 
-  function initWidget() {
-    const scripts = document.querySelectorAll('script[data-chatbot-id]');
+  // Initialize
+  function init() {
+    const script = document.currentScript || document.querySelector('script[data-chatbot-id]');
     
-    scripts.forEach(script => {
-      const config = {
-        chatbotId: script.getAttribute('data-chatbot-id'),
-        apiUrl: script.getAttribute('data-api-url') || window.location.origin,
-        theme: script.getAttribute('data-theme') || 'light',
-        primaryColor: script.getAttribute('data-primary-color') || '#2563eb',
-        position: script.getAttribute('data-position') || 'bottom-right',
-        size: script.getAttribute('data-size') || 'medium',
-        welcomeMessage: script.getAttribute('data-welcome-message') || 'Hi! How can I help you today?',
-        placeholder: script.getAttribute('data-placeholder') || 'Type your message...',
-        showBranding: script.getAttribute('data-show-branding') !== 'false',
-        borderRadius: parseInt(script.getAttribute('data-border-radius')) || 12,
-        fontFamily: script.getAttribute('data-font-family') || 'system-ui',
-        animation: script.getAttribute('data-animation') || 'bounce',
-        chatbotName: script.getAttribute('data-chatbot-name') || 'Assistant'
-      };
-      
-      if (config.chatbotId) {
-        new ChatWidget(config);
-      }
+    if (!script) {
+      console.error('TreeWidget: initialization script not found');
+      return;
+    }
+
+    const config = {
+      chatbotId: script.dataset.chatbotId,
+      apiUrl: script.dataset.apiUrl,
+      chatbotName: script.dataset.chatbotName,
+      primaryColor: script.dataset.primaryColor,
+      position: script.dataset.position,
+      welcomeMessage: script.dataset.welcomeMessage,
+      placeholder: script.dataset.placeholder,
+      showBranding: script.dataset.showBranding !== 'false',
+      borderRadius: parseInt(script.dataset.borderRadius) || 12,
+      fontFamily: script.dataset.fontFamily,
+      animation: script.dataset.animation,
+      theme: script.dataset.theme
+    };
+
+    // Filter undefined values
+    Object.keys(config).forEach(key => {
+      if (config[key] === undefined) delete config[key];
     });
+
+    try {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => new TreeChatWidget(config));
+      } else {
+        new TreeChatWidget(config);
+      }
+    } catch (error) {
+      console.error('TreeWidget init error:', error);
+    }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initWidget);
-  } else {
-    initWidget();
-  }
+  // Auto-initialize
+  init();
 
-  window.ChatWidget = ChatWidget;
-})();
+  // Export for manual use
+  window.TreeChatWidget = TreeChatWidget;
+
+})(); 
