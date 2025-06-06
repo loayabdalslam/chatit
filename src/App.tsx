@@ -42,6 +42,31 @@ type Page =
   | "reports"
   | "conversations";
 
+// Check if we're in widget mode - handle both /widget/ID and just /ID patterns
+const checkWidgetRoute = () => {
+  const path = window.location.pathname;
+  
+  // Handle /widget/chatbotId pattern
+  if (path.startsWith('/widget/')) {
+    return {
+      isWidget: true,
+      chatbotId: path.split('/widget/')[1]
+    };
+  }
+  
+  // Handle direct chatbot ID pattern (like the URL you provided)
+  const pathSegments = path.split('/').filter(Boolean);
+  if (pathSegments.length === 1 && pathSegments[0].length > 10) {
+    // Looks like a chatbot ID (long string)
+    return {
+      isWidget: true,
+      chatbotId: pathSegments[0]
+    };
+  }
+  
+  return { isWidget: false, chatbotId: null };
+};
+
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
   const [selectedChatbotId, setSelectedChatbotId] = useState<Id<"chatbots"> | null>(null);
@@ -51,12 +76,7 @@ function AppContent() {
   const adminInfo = useQuery(api.admin.getAdminInfo);
   const { signOut } = useAuthActions();
 
-  // Check if we're in widget mode (this should be handled separately)
-  const isWidgetRoute = window.location.pathname.startsWith('/widget/');
-  
-  if (isWidgetRoute) {
-    return <WidgetHandler />;
-  }
+  const { isWidget, chatbotId: widgetChatbotId } = checkWidgetRoute();
 
   useEffect(() => {
     if (user && (currentPage === "login" || currentPage === "signup" || currentPage === "landing")) {
@@ -184,6 +204,11 @@ function AppContent() {
         return <Dashboard />;
     }
   };
+
+  // Render widget outside authentication wrapper
+  if (isWidget && widgetChatbotId) {
+    return <WidgetHandler chatbotId={widgetChatbotId} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 transition-colors duration-200">

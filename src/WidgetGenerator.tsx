@@ -306,10 +306,10 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
   }
 
   const tabs = [
-    { id: "customize", label: "🎨 Customize", icon: "🎨" },
-    { id: "preview", label: "👁️ Preview", icon: "👁️" },
-    { id: "test", label: "🧪 Test Chat", icon: "🧪" },
-    { id: "code", label: "📦 Get Iframe", icon: "📦" }
+    { id: "customize", label: " Customize", icon: "🎨" },
+    { id: "preview", label: "Preview", icon: "👁️" },
+    { id: "test", label: "Test Chat", icon: "🧪" },
+    { id: "code", label: "Get Iframe", icon: "📦" }
   ];
 
   return (

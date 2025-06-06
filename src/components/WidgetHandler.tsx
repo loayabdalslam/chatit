@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { WidgetPage } from "./WidgetPage";
 import { Id } from "../../convex/_generated/dataModel";
 
-export function WidgetHandler() {
+interface WidgetHandlerProps {
+  chatbotId: string;
+}
+
+export function WidgetHandler({ chatbotId }: WidgetHandlerProps) {
   const [widgetConfig, setWidgetConfig] = useState<{
     chatbotId: Id<"chatbots"> | null;
     primaryColor: string;
@@ -18,21 +22,26 @@ export function WidgetHandler() {
   } | null>(null);
 
   useEffect(() => {
-    // Check if we're in widget mode
-    const pathParts = window.location.pathname.split('/');
-    const isWidgetRoute = pathParts[1] === 'widget' && pathParts[2];
-    
-    if (isWidgetRoute) {
-      const chatbotId = pathParts[2] as Id<"chatbots">;
+    if (chatbotId) {
       const urlParams = new URLSearchParams(window.location.search);
       
+      // Decode URL parameters that may be encoded
+      const decodeParam = (param: string | null) => {
+        if (!param) return null;
+        try {
+          return decodeURIComponent(param);
+        } catch {
+          return param;
+        }
+      };
+
       setWidgetConfig({
-        chatbotId,
-        primaryColor: urlParams.get('primaryColor') || '#2563eb',
+        chatbotId: chatbotId as Id<"chatbots">,
+        primaryColor: decodeParam(urlParams.get('primaryColor')) || '#2563eb',
         position: urlParams.get('position') || 'bottom-right',
         size: urlParams.get('size') || 'medium',
-        welcomeMessage: urlParams.get('welcomeMessage') || 'Hi! How can I help you today?',
-        placeholder: urlParams.get('placeholder') || 'Type your message...',
+        welcomeMessage: decodeParam(urlParams.get('welcomeMessage')) || 'Hi! How can I help you today?',
+        placeholder: decodeParam(urlParams.get('placeholder')) || 'Type your message...',
         showBranding: urlParams.get('showBranding') !== 'false',
         borderRadius: parseInt(urlParams.get('borderRadius') || '12'),
         fontFamily: urlParams.get('fontFamily') || 'system-ui',
@@ -40,7 +49,7 @@ export function WidgetHandler() {
         apiKey: urlParams.get('apiKey') || ''
       });
     }
-  }, []);
+  }, [chatbotId]);
 
   if (!widgetConfig) {
     return (
