@@ -2,9 +2,10 @@ import { useState } from "react";
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onSignUp?: () => void;
 }
 
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onSignUp }: LandingPageProps) {
   const [email, setEmail] = useState("");
 
   const features = [
@@ -76,9 +77,15 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             <div className="flex items-center space-x-4">
               <button
                 onClick={onGetStarted}
+                className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-md transition-colors font-medium"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={onSignUp || onGetStarted}
                 className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
               >
-                Get Started
+                Sign Up Free
               </button>
             </div>
           </div>
@@ -101,11 +108,19 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={onGetStarted}
+                onClick={onSignUp || onGetStarted}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
               >
                 Start Building for Free
               </button>
+              <button
+                onClick={onGetStarted}
+                className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
+              >
+                Sign In
+              </button>
+            </div>
+            <div className="flex justify-center mt-4">
               <div className="flex items-center text-gray-600">
                 <span className="text-sm">✓ No credit card required</span>
               </div>
@@ -176,12 +191,20 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join thousands of businesses using Chatit.cloud to engage customers and drive growth.
           </p>
-          <button
-            onClick={onGetStarted}
-            className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg"
-          >
-            Get Started Today
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={onSignUp || onGetStarted}
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg"
+            >
+              Start Free Trial
+            </button>
+            <button
+              onClick={onGetStarted}
+              className="bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-400 transition-colors font-semibold text-lg"
+            >
+              Sign In
+            </button>
+          </div>
         </div>
       </section>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../convex/_generated/api";
-import { SignInForm } from "./SignInForm";
+import { AuthPage } from "./components/auth";
 import { SignOutButton } from "./SignOutButton";
 import { LandingPage } from "./LandingPage";
 import { Dashboard } from "./Dashboard";
@@ -14,6 +14,7 @@ import { SubscriptionManager } from "./SubscriptionManager";
 import { AdminDashboard } from "./AdminDashboard";
 import { AdminSetup } from "./AdminSetup";
 import { WidgetGenerator } from "./WidgetGenerator";
+import { WidgetHandler } from "./components/WidgetHandler";
 import { DetailedDashboard } from "./components/DetailedDashboard";
 import { ReportGenerator } from "./components/ReportGenerator";
 import { ConversationHistory } from "./components/ConversationHistory";
@@ -26,6 +27,7 @@ import { Toaster } from "sonner";
 type Page = 
   | "landing"
   | "login"
+  | "signup"
   | "dashboard" 
   | "chatbots" 
   | "create-chatbot" 
@@ -49,8 +51,15 @@ function AppContent() {
   const adminInfo = useQuery(api.admin.getAdminInfo);
   const { signOut } = useAuthActions();
 
+  // Check if we're in widget mode (this should be handled separately)
+  const isWidgetRoute = window.location.pathname.startsWith('/widget/');
+  
+  if (isWidgetRoute) {
+    return <WidgetHandler />;
+  }
+
   useEffect(() => {
-    if (user && (currentPage === "login" || currentPage === "landing")) {
+    if (user && (currentPage === "login" || currentPage === "signup" || currentPage === "landing")) {
       setCurrentPage("dashboard");
     }
   }, [user, currentPage]);
@@ -91,39 +100,30 @@ function AppContent() {
   };
 
   const renderLoginPage = () => (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <h1 className="text-3xl font-bold text-blue-600">Chatit</h1>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <button
-            onClick={() => setCurrentPage("landing")}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            go back to homepage
-          </button>
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <SignInForm />
-        </div>
-      </div>
-    </div>
+    <AuthPage
+      onSuccess={() => setCurrentPage("dashboard")}
+      onBackToHome={() => setCurrentPage("landing")}
+      initialMode="login"
+    />
   );
 
   const renderContent = () => {
     switch (currentPage) {
       case "landing":
-        return <LandingPage onGetStarted={() => setCurrentPage("login")} />;
+        return <LandingPage 
+          onGetStarted={() => setCurrentPage("login")}
+          onSignUp={() => setCurrentPage("signup")}
+        />;
       case "login":
         return renderLoginPage();
+      case "signup":
+        return (
+          <AuthPage
+            onSuccess={() => setCurrentPage("dashboard")}
+            onBackToHome={() => setCurrentPage("landing")}
+            initialMode="signup"
+          />
+        );
       case "dashboard":
         return <Dashboard />;
       case "detailed-dashboard":
@@ -189,9 +189,22 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 transition-colors duration-200">
       <Unauthenticated>
         {currentPage === "landing" ? (
-          <LandingPage onGetStarted={() => setCurrentPage("login")} />
+          <LandingPage 
+            onGetStarted={() => setCurrentPage("login")}
+            onSignUp={() => setCurrentPage("signup")}
+          />
+        ) : currentPage === "signup" ? (
+          <AuthPage
+            onSuccess={() => setCurrentPage("dashboard")}
+            onBackToHome={() => setCurrentPage("landing")}
+            initialMode="signup"
+          />
         ) : (
-          renderLoginPage()
+          <AuthPage
+            onSuccess={() => setCurrentPage("dashboard")}
+            onBackToHome={() => setCurrentPage("landing")}
+            initialMode="login"
+          />
         )}
       </Unauthenticated>
       

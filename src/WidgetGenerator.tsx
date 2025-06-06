@@ -23,6 +23,16 @@ interface WidgetConfig {
 
 type TabType = "customize" | "preview" | "test" | "code";
 
+// Reusable chat icon component to avoid duplication
+const ChatIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.36 15.01 3 16.31L2 22L7.69 21C8.99 21.64 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" opacity="0.9"/>
+    <circle cx="8" cy="12" r="1.5" fill="white"/>
+    <circle cx="12" cy="12" r="1.5" fill="white"/>
+    <circle cx="16" cy="12" r="1.5" fill="white"/>
+  </svg>
+);
+
 export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
   const [activeTab, setActiveTab] = useState<TabType>("customize");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -140,277 +150,149 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
     }
   };
 
+
+
   const generateApiKey = () => {
-    return `chatbot_${chatbotId.slice(0, 8)}_${Date.now().toString(36)}`;
+    return `widget_${chatbotId.slice(-8)}_${Date.now().toString(36)}`;
   };
 
   const generateWidgetCode = () => {
     const baseUrl = window.location.origin;
     const apiKey = generateApiKey();
-    return `<!-- Chatbot Widget -->
-<!-- API Key: ${apiKey} -->
-<!-- Keep this API key secure and don't expose it in client-side code -->
+    const widgetUrl = `${baseUrl}/widget/${chatbotId}?${new URLSearchParams({
+      primaryColor: config.primaryColor,
+      position: config.position,
+      size: config.size,
+      welcomeMessage: config.welcomeMessage,
+      placeholder: config.placeholder,
+      showBranding: config.showBranding.toString(),
+      borderRadius: config.borderRadius.toString(),
+      fontFamily: config.fontFamily,
+      animation: config.animation,
+      apiKey: apiKey
+    }).toString()}`;
+
+    return `<!-- Chatbot Widget Iframe -->
+<!-- Widget ID: ${chatbotId} -->
+<!-- API Key: ${apiKey} (for widget configuration only) -->
 <script>
-  (function() {
-    const config = {
-      chatbotId: "${chatbotId}",
-      apiUrl: "${baseUrl}",
-      primaryColor: "${config.primaryColor}",
-      position: "${config.position}",
-      size: "${config.size}",
-      welcomeMessage: "${config.welcomeMessage}",
-      placeholder: "${config.placeholder}",
-      showBranding: ${config.showBranding},
-      borderRadius: ${config.borderRadius},
-      fontFamily: "${config.fontFamily}",
-      animation: "${config.animation}"
-    };
-    
-    // Create widget container
-    const widget = document.createElement('div');
-    widget.style.cssText = \`
-      position: fixed;
-      \${config.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
-      \${config.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
-      z-index: 9999;
-      font-family: \${config.fontFamily}, sans-serif;
-    \`;
-    
-    // Chat button
-    const button = document.createElement('button');
-    const buttonSize = config.size === 'small' ? '50px' : config.size === 'large' ? '70px' : '60px';
-    button.style.cssText = \`
-      width: \${buttonSize};
-      height: \${buttonSize};
-      border-radius: \${config.borderRadius}px;
-      background: \${config.primaryColor};
-      border: none;
-      color: white;
-      font-size: \${config.size === 'small' ? '20px' : config.size === 'large' ? '28px' : '24px'};
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      \${config.animation === 'bounce' ? 'animation: bounce 2s infinite;' : ''}
-      \${config.animation === 'pulse' ? 'animation: pulse 2s infinite;' : ''}
-      \${config.animation === 'shake' ? 'animation: shake 0.5s ease-in-out infinite alternate;' : ''}
-    \`;
-    // Create custom SVG icon
-    const iconSvg = document.createElement('div');
-    iconSvg.innerHTML = \`
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.36 15.01 3 16.31L2 22L7.69 21C8.99 21.64 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" opacity="0.9"/>
-        <circle cx="8" cy="12" r="1.5" fill="white"/>
-        <circle cx="12" cy="12" r="1.5" fill="white"/>
-        <circle cx="16" cy="12" r="1.5" fill="white"/>
-      </svg>
-    \`;
-    button.appendChild(iconSvg);
-    
-    // Chat window
-    const chatWindow = document.createElement('div');
-    chatWindow.style.cssText = \`
-      position: absolute;
-      \${config.position.includes('bottom') ? 'bottom: 80px;' : 'top: 80px;'}
-      \${config.position.includes('right') ? 'right: 0;' : 'left: 0;'}
-      width: 350px;
-      height: 500px;
-      background: white;
-      border-radius: \${config.borderRadius}px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-    \`;
-    
-    // Chat header
-    const header = document.createElement('div');
-    header.style.cssText = \`
-      background: \${config.primaryColor};
-      color: white;
-      padding: 15px;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    \`;
-    header.innerHTML = \`
-      <span>\${config.welcomeMessage}</span>
-      <button onclick="toggleChat()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
-    \`;
-    
-    // Chat messages
-    const messages = document.createElement('div');
-    messages.style.cssText = \`
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #f9fafb;
-    \`;
-    
-    // Chat input
-    const inputContainer = document.createElement('div');
-    inputContainer.style.cssText = \`
-      padding: 15px;
-      border-top: 1px solid #e5e7eb;
-      background: white;
-    \`;
-    
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = config.placeholder;
-    input.style.cssText = \`
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      background: white;
-      color: black;
-      outline: none;
-    \`;
-    
-    inputContainer.appendChild(input);
-    chatWindow.appendChild(header);
-    chatWindow.appendChild(messages);
-    chatWindow.appendChild(inputContainer);
-    
-    ${config.showBranding ? `
-    // Add branding
-    const branding = document.createElement('div');
-    branding.style.cssText = \`
-      padding: 8px 15px;
-      text-align: center;
-      font-size: 11px;
-      color: #6b7280;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-    \`;
-    branding.innerHTML = 'Powered by <a href="https://chatit.cloud" target="_blank" style="color: #2563eb; text-decoration: none;">chatit.cloud</a>';
-    chatWindow.appendChild(branding);
-    ` : ''}
-    
-    widget.appendChild(button);
-    widget.appendChild(chatWindow);
-    
-    // Toggle function
-    window.toggleChat = function() {
-      const isOpen = chatWindow.style.display === 'flex';
-      chatWindow.style.display = isOpen ? 'none' : 'flex';
-    };
-    
-    button.onclick = window.toggleChat;
-    
-    // Add to page
-    document.body.appendChild(widget);
-    
-    // Handle messages - Connect to your actual chatbot API
-    input.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && input.value.trim()) {
-        const userMsg = document.createElement('div');
-        userMsg.style.cssText = \`
-          margin-bottom: 10px;
-          text-align: right;
-        \`;
-        userMsg.innerHTML = \`
-          <div style="
-            display: inline-block;
-            background: \${config.primaryColor};
-            color: white;
-            padding: 8px 12px;
-            border-radius: 12px;
-            max-width: 80%;
-          ">\${input.value}</div>
-        \`;
-        messages.appendChild(userMsg);
-        
-        // Send to your chatbot API
-        fetch(\`\${config.apiUrl}/api/chat\`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-API-Key': '${apiKey}'
-          },
-          body: JSON.stringify({
-            chatbotId: config.chatbotId,
-            message: input.value,
-            sessionId: 'widget-' + Date.now()
-          })
-        })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          const botMsg = document.createElement('div');
-          botMsg.style.cssText = \`
-            margin-bottom: 10px;
-            text-align: left;
-          \`;
-          botMsg.innerHTML = \`
-            <div style="
-              display: inline-block;
-              background: #e5e7eb;
-              color: black;
-              padding: 8px 12px;
-              border-radius: 12px;
-              max-width: 80%;
-            ">\${data.response || 'Sorry, I could not process your request.'}</div>
-          \`;
-          messages.appendChild(botMsg);
-          messages.scrollTop = messages.scrollHeight;
-        })
-        .catch(error => {
-          console.error('Chat error:', error);
-          const errorMsg = document.createElement('div');
-          errorMsg.style.cssText = \`
-            margin-bottom: 10px;
-            text-align: left;
-          \`;
-          errorMsg.innerHTML = \`
-            <div style="
-              display: inline-block;
-              background: #fee2e2;
-              color: #dc2626;
-              padding: 8px 12px;
-              border-radius: 12px;
-              max-width: 80%;
-              border: 1px solid #fecaca;
-            ">Connection error: \${error.message}. Please try again.</div>
-          \`;
-          messages.appendChild(errorMsg);
-          messages.scrollTop = messages.scrollHeight;
-        });
-        
-        input.value = '';
-        messages.scrollTop = messages.scrollHeight;
+(function() {
+  // Chatbot Widget Configuration
+  const widgetConfig = {
+    chatbotId: "${chatbotId}",
+    apiKey: "${apiKey}",
+    src: "${widgetUrl}",
+    position: "${config.position}",
+    size: "${config.size}",
+    animation: "${config.animation}"
+  };
+
+  // Create widget iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = widgetConfig.src;
+  iframe.id = 'chatbot-widget-' + widgetConfig.chatbotId;
+  iframe.setAttribute('title', 'Chatbot Widget');
+  iframe.setAttribute('allow', 'clipboard-write');
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox');
+  iframe.setAttribute('loading', 'lazy');
+  
+  // Initial iframe styling
+  iframe.style.cssText = \`
+    position: fixed;
+    ${config.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
+    ${config.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
+    width: ${config.size === 'small' ? '60px' : config.size === 'large' ? '80px' : '70px'};
+    height: ${config.size === 'small' ? '60px' : config.size === 'large' ? '80px' : '70px'};
+    border: none;
+    border-radius: ${config.borderRadius}px;
+    z-index: 999999;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    pointer-events: auto;
+    opacity: 0;
+    transform: scale(0.8);
+  \`;
+
+  // Animation styles
+  const animationStyles = document.createElement('style');
+  animationStyles.id = 'chatbot-widget-animations';
+  animationStyles.textContent = \`
+    @keyframes chatbot-bounce {
+      0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0) scale(1); }
+      40%, 43% { transform: translate3d(0,-8px,0) scale(1.02); }
+      70% { transform: translate3d(0,-4px,0) scale(1.01); }
+    }
+    @keyframes chatbot-pulse {
+      0% { transform: scale(1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
+      50% { transform: scale(1.05); box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2); }
+      100% { transform: scale(1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
+    }
+    @keyframes chatbot-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    @keyframes chatbot-fadeIn {
+      to {
+        opacity: 1;
+        transform: scale(1);
       }
-    });
+    }
     
-    // Add CSS animations
-    const style = document.createElement('style');
-    style.textContent = \`
-      @keyframes bounce {
-        0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-        40%, 43% { transform: translate3d(0,-30px,0); }
-        70% { transform: translate3d(0,-15px,0); }
-        90% { transform: translate3d(0,-4px,0); }
+    #chatbot-widget-${chatbotId} {
+      animation: chatbot-fadeIn 0.5s ease-out forwards;
+    }
+    
+    ${config.animation !== 'none' ? `
+    #chatbot-widget-${chatbotId}:not(.chatbot-expanded) {
+      animation: chatbot-fadeIn 0.5s ease-out forwards, 
+                 chatbot-${config.animation} ${config.animation === 'shake' ? '0.6s' : '2s'} ease-in-out infinite 1s;
+    }` : ''}
+  \`;
+
+  // Add iframe and styles to page
+  if (!document.getElementById('chatbot-widget-animations')) {
+    document.head.appendChild(animationStyles);
+  }
+  document.body.appendChild(iframe);
+
+  // Handle iframe messages for dynamic resizing and interactions
+  window.addEventListener('message', function(event) {
+    if (event.origin !== '${baseUrl}') return;
+    
+    const data = event.data;
+    
+    if (data.type === 'CHATBOT_WIDGET_RESIZE') {
+      iframe.style.width = data.width + 'px';
+      iframe.style.height = data.height + 'px';
+      
+      // Add expanded class when chat is open
+      if (data.expanded) {
+        iframe.classList.add('chatbot-expanded');
+      } else {
+        iframe.classList.remove('chatbot-expanded');
       }
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }
-      @keyframes shake {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(2px); }
-      }
-    \`;
-    document.head.appendChild(style);
-  })();
+    }
+    
+    if (data.type === 'CHATBOT_WIDGET_READY') {
+      console.log('Chatbot widget loaded successfully');
+    }
+  });
+
+  // Widget error handling
+  iframe.onerror = function() {
+    console.error('Failed to load chatbot widget');
+    iframe.style.display = 'none';
+  };
+
+  // Widget ready notification
+  iframe.onload = function() {
+    console.log('Chatbot widget iframe loaded');
+  };
+
+  console.log('Chatbot widget initialized with ID:', widgetConfig.chatbotId);
+})();
 </script>`;
   };
 
@@ -427,7 +309,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
     { id: "customize", label: "🎨 Customize", icon: "🎨" },
     { id: "preview", label: "👁️ Preview", icon: "👁️" },
     { id: "test", label: "🧪 Test Chat", icon: "🧪" },
-    { id: "code", label: "💻 Get Code", icon: "💻" }
+    { id: "code", label: "📦 Get Iframe", icon: "📦" }
   ];
 
   return (
@@ -657,12 +539,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                           animation: config.animation === 'shake' ? 'shake 0.5s ease-in-out infinite alternate' : undefined
                         }}
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                           <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.36 15.01 3 16.31L2 22L7.69 21C8.99 21.64 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" opacity="0.9"/>
-                           <circle cx="8" cy="12" r="1.5" fill="white"/>
-                           <circle cx="12" cy="12" r="1.5" fill="white"/>
-                           <circle cx="16" cy="12" r="1.5" fill="white"/>
-                         </svg>
+                        <ChatIcon size={24} />
                       </button>
 
                       {/* Chat Window */}
@@ -822,7 +699,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
             {/* Code Tab */}
             {activeTab === "code" && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-900">JavaScript Widget Code</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Iframe Widget Code</h3>
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -842,14 +719,18 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h5 className="font-semibold text-blue-900 mb-2">⚙️ Widget Features</h5>
+                    <h5 className="font-semibold text-blue-900 mb-2">🎯 Enhanced Iframe Widget Features</h5>
                     <ul className="list-disc list-inside space-y-1 text-sm text-blue-800">
-                      <li>Fully customizable appearance</li>
-                      <li>Real-time chat functionality</li>
-                      <li>Responsive design for all devices</li>
-                      <li>Easy integration with any website</li>
-                      <li>Secure API key authentication</li>
-                      <li>Error handling and connection recovery</li>
+                      <li>Secure iframe-based integration with sandbox protection</li>
+                      <li>API key for secure widget configuration</li>
+                      <li>Fully customizable appearance and animations</li>
+                      <li>Real-time chat functionality with message handling</li>
+                      <li>Responsive design optimized for all devices</li>
+                      <li>Smart resizing and smooth transitions</li>
+                      <li>Cross-origin messaging with security validation</li>
+                      <li>Error handling and fallback mechanisms</li>
+                      <li>Console logging for debugging</li>
+                      <li>Dynamic loading with fade-in animation</li>
                     </ul>
                   </div>
                 </div>
@@ -857,25 +738,57 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h4 className="font-semibold text-yellow-900 mb-2">📋 Installation Instructions</h4>
                   <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-800">
-                    <li>Copy the JavaScript code above</li>
+                    <li>Copy the iframe embed code above</li>
                     <li>Paste it into your website's HTML, preferably before the closing &lt;/body&gt; tag</li>
-                    <li>The widget will automatically appear on your website</li>
+                    <li>The iframe widget will automatically appear on your website</li>
+                    <li>No additional configuration required - everything is handled securely</li>
                     <li>Test the widget to ensure it's working correctly</li>
                   </ol>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-900 mb-2">🧪 Test Your Widget</h4>
-                  <p className="text-sm text-green-800 mb-2">
-                    Test your widget in our demo environment:
+                  <h4 className="font-semibold text-green-900 mb-2">🔒 Security & API Features</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-green-800">
+                    <li>API key for secure widget authentication and configuration</li>
+                    <li>Iframe sandboxing with restricted permissions</li>
+                    <li>Cross-origin isolation and domain validation</li>
+                    <li>Secure communication via postMessage API</li>
+                    <li>No sensitive backend API keys exposed to client</li>
+                    <li>Widget-specific API key for tracking and analytics</li>
+                    <li>Error handling with console logging for debugging</li>
+                  </ul>
+                </div>
+
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-purple-900 mb-2">🧪 Direct Widget URL & API Key</h4>
+                  <p className="text-sm text-purple-800 mb-2">
+                    For testing or advanced integration, use this direct URL:
                   </p>
-                  <a 
-                    href="/test-widget.html" 
-                    target="_blank"
-                    className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    🚀 Open Test Environment
-                  </a>
+                  <div className="bg-white p-2 rounded border text-sm font-mono text-purple-900 break-all mb-3">
+                    {`${window.location.origin}/widget/${chatbotId}?${new URLSearchParams({
+                      primaryColor: config.primaryColor,
+                      position: config.position,
+                      size: config.size,
+                      welcomeMessage: config.welcomeMessage,
+                      placeholder: config.placeholder,
+                      showBranding: config.showBranding.toString(),
+                      borderRadius: config.borderRadius.toString(),
+                      fontFamily: config.fontFamily,
+                      animation: config.animation,
+                      apiKey: generateApiKey()
+                    }).toString()}`}
+                  </div>
+                  <div className="bg-purple-100 p-2 rounded border">
+                    <p className="text-xs text-purple-800 mb-1">
+                      <strong>Generated API Key:</strong>
+                    </p>
+                    <code className="text-xs text-purple-900 font-mono">
+                      {generateApiKey()}
+                    </code>
+                    <p className="text-xs text-purple-700 mt-1">
+                      This API key is used for widget authentication and configuration tracking.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -923,12 +836,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                     animation: config.animation === 'shake' ? 'shake 0.5s ease-in-out infinite alternate' : undefined
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.36 15.01 3 16.31L2 22L7.69 21C8.99 21.64 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="currentColor" opacity="0.9"/>
-                    <circle cx="8" cy="12" r="1.5" fill="white"/>
-                    <circle cx="12" cy="12" r="1.5" fill="white"/>
-                    <circle cx="16" cy="12" r="1.5" fill="white"/>
-                  </svg>
+                  <ChatIcon size={16} />
                 </button>
               </div>
             </div>
