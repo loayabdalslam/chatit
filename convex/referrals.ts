@@ -152,7 +152,10 @@ export const getReferralStats = query({
 
     // Calculate statistics
     const totalEarnings = referrals.reduce((sum, r) => sum + r.commission, 0);
-    const activeReferrals = referrals.filter(r => r.status === "active" || r.status === "completed").length;
+    // Show all referrals, including pending ones (users who just signed up)
+    const activeReferrals = referrals.filter(r => 
+      r.status === "pending" || r.status === "active" || r.status === "completed"
+    ).length;
     
     // Calculate monthly earnings (last 30 days)
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -162,11 +165,11 @@ export const getReferralStats = query({
 
     return {
       referralCode: user?.referralCode,
-      totalReferrals: referrals.length,
-      activeReferrals,
+      totalReferrals: referrals.length, // This shows ALL referrals
+      activeReferrals, // This now includes pending referrals (newly registered users)
       totalEarnings,
       monthlyEarnings,
-      referrals: referralDetails,
+      referrals: referralDetails, // This shows ALL referrals with their details
     };
   },
 });
