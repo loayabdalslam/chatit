@@ -50,25 +50,28 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
       const result = await signIn("password", formData);
       
       if (result) {
-        // If signup with referral code, process the referral
+        // Success message first
+        toast.success(flow === "signIn" ? "Welcome back!" : "Account created successfully!");
+        
+        // If signup with referral code, process the referral after a short delay
         if (flow === "signUp" && referralCode.trim()) {
-          try {
-            await processSignupReferral({ referralCode: referralCode.trim() });
-            toast.success("Account created successfully! Referral processed - your friend will earn commissions from your subscriptions.");
-          } catch (referralError: any) {
-            console.error("Referral processing error:", referralError);
-            // Don't fail the signup if referral processing fails
-            toast.success("Account created successfully!");
-            if (referralError.message?.includes("Invalid referral code")) {
-              toast.error("Invalid referral code - but your account was created successfully.");
-            } else if (referralError.message?.includes("already been referred")) {
-              toast.warning("You've already been referred by someone else.");
-            } else {
-              toast.warning("Note: There was an issue processing your referral code.");
+          // Process referral after user is fully authenticated
+          setTimeout(async () => {
+            try {
+              console.log("Processing referral with code:", referralCode.trim());
+              await processSignupReferral({ referralCode: referralCode.trim() });
+              toast.success("Referral processed! Your referrer will earn commissions from your subscriptions.");
+            } catch (referralError: any) {
+              console.error("Referral processing error:", referralError);
+              if (referralError.message?.includes("Invalid referral code")) {
+                toast.error("Invalid referral code detected.");
+              } else if (referralError.message?.includes("already been referred")) {
+                toast.warning("You've already been referred by someone else.");
+              } else {
+                toast.warning("Note: There was an issue processing your referral code.");
+              }
             }
-          }
-        } else {
-          toast.success(flow === "signIn" ? "Welcome back!" : "Account created successfully!");
+          }, 1000); // 1 second delay to ensure authentication is complete
         }
         
         // Clear URL parameters after successful signup

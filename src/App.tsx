@@ -19,9 +19,12 @@ import { DetailedDashboard } from "./components/DetailedDashboard";
 import { ReportGenerator } from "./components/ReportGenerator";
 import { ConversationHistory } from "./components/ConversationHistory";
 import { ReferralsDashboard } from "./components/ReferralsDashboard";
+import { ContactUs } from "./components/ContactUs";
+import { SuperAdmin } from "./components/SuperAdmin";
 import { Sidebar } from "./components/Sidebar";
 import { MessageLimitBanner } from "./components/MessageLimitBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { usePageTracking } from "./hooks/usePageTracking";
 import { Id } from "../convex/_generated/dataModel";
 import { Toaster } from "sonner";
 
@@ -41,7 +44,9 @@ type Page =
   | "detailed-dashboard"
   | "reports"
   | "conversations"
-  | "referrals";
+  | "referrals"
+  | "contact"
+  | "super-admin";
 
 // Check if we're in widget mode - handle both /widget/ID and just /ID patterns
 const checkWidgetRoute = () => {
@@ -68,8 +73,27 @@ const checkWidgetRoute = () => {
   return { isWidget: false, chatbotId: null };
 };
 
+// Check for special routes
+const checkSpecialRoutes = (): Page => {
+  const path = window.location.pathname;
+  
+  if (path === '/contact' || path === '/contact-us') {
+    return 'contact';
+  }
+  
+  if (path === '/admin' || path === '/super-admin') {
+    return 'super-admin';
+  }
+  
+  return 'landing';
+};
+
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState<Page>("landing");
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    // Initialize page based on URL
+    const specialRoute = checkSpecialRoutes();
+    return specialRoute;
+  });
   const [selectedChatbotId, setSelectedChatbotId] = useState<Id<"chatbots"> | null>(null);
   const [editingChatbotId, setEditingChatbotId] = useState<Id<"chatbots"> | null>(null);
 
@@ -78,6 +102,9 @@ function AppContent() {
   const { signOut } = useAuthActions();
 
   const { isWidget, chatbotId: widgetChatbotId } = checkWidgetRoute();
+  
+  // Track page visits for analytics
+  usePageTracking(currentPage);
 
   useEffect(() => {
     if (user && (currentPage === "auth" || currentPage === "landing")) {
@@ -187,6 +214,10 @@ function AppContent() {
         return <AdminSetup onComplete={() => setCurrentPage("admin")} />;
       case "referrals":
         return <ReferralsDashboard />;
+      case "contact":
+        return <ContactUs />;
+      case "super-admin":
+        return <SuperAdmin />;
       default:
         return <Dashboard />;
     }
@@ -195,6 +226,15 @@ function AppContent() {
   // Render widget outside authentication wrapper
   if (isWidget && widgetChatbotId) {
     return <WidgetHandler chatbotId={widgetChatbotId} />;
+  }
+
+  // Render special pages outside authentication wrapper  
+  if (currentPage === "contact") {
+    return <ContactUs />;
+  }
+  
+  if (currentPage === "super-admin") {
+    return <SuperAdmin />;
   }
 
   return (

@@ -106,10 +106,15 @@ export const processReferral = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      console.error("❌ Referral processing failed: User not authenticated");
       throw new Error("Not authenticated");
     }
 
-    console.log("Processing referral for user:", userId, "with code:", args.referralCode);
+    console.log("🔄 Processing referral for user:", userId, "with code:", args.referralCode);
+
+    // Get current user info for debugging
+    const currentUser = await ctx.db.get(userId);
+    console.log("👤 Current user email:", currentUser?.email);
 
     // Find the referrer by referral code
     const referrer = await ctx.db
@@ -117,14 +122,16 @@ export const processReferral = mutation({
       .withIndex("by_referral_code", (q: any) => q.eq("referralCode", args.referralCode))
       .first();
 
-    console.log("Found referrer:", referrer ? referrer._id : "Not found");
+    console.log("🔍 Found referrer:", referrer ? `${referrer._id} (${referrer.email})` : "❌ Not found");
 
     if (!referrer) {
+      console.error("❌ Invalid referral code:", args.referralCode);
       throw new Error("Invalid referral code");
     }
 
     // Check if user is trying to refer themselves
     if (referrer._id === userId) {
+      console.error("❌ User trying to refer themselves");
       throw new Error("Cannot use your own referral code");
     }
 
@@ -134,9 +141,10 @@ export const processReferral = mutation({
       .withIndex("by_referred_user", (q: any) => q.eq("referredUserId", userId))
       .first();
 
-    console.log("Existing referral:", existingReferral ? "Found" : "None");
+    console.log("🔍 Existing referral check:", existingReferral ? "❌ Already referred" : "✅ Can be referred");
 
     if (existingReferral) {
+      console.error("❌ User already referred by:", existingReferral.referrerId);
       throw new Error("User has already been referred");
     }
 
@@ -149,7 +157,13 @@ export const processReferral = mutation({
       createdAt: Date.now(),
     });
 
-    console.log("Created referral record:", referralId);
+    console.log("✅ Successfully created referral record:", referralId);
+    console.log("📊 Referral details:", {
+      referrer: referrer.email,
+      referred: currentUser?.email,
+      code: args.referralCode,
+      status: "pending"
+    });
 
     return null;
   },
@@ -456,51 +470,4 @@ export const testReferralFlow = mutation({
   },
 });
 
-// Test function to create a sample referral (for testing only)
-export const createTestReferral = mutation({
-  args: {
-    referralCode: v.string(),
-  },
-  returns: v.string(),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    // Find the referrer by referral code
-    const referrer = await ctx.db
-      .query("users")
-      .withIndex("by_referral_code", (q: any) => q.eq("referralCode", args.referralCode))
-      .first();
-
-    if (!referrer) {
-      throw new Error("Invalid referral code");
-    }
-
-    if (referrer._id === userId) {
-      throw new Error("Cannot refer yourself");
-    }
-
-    // Check if this user was already referred
-    const existingReferral = await ctx.db
-      .query("referrals")
-      .withIndex("by_referred_user", (q: any) => q.eq("referredUserId", userId))
-      .first();
-
-    if (existingReferral) {
-      throw new Error("User has already been referred");
-    }
-
-    // Create test referral record
-    const referralId = await ctx.db.insert("referrals", {
-      referrerId: referrer._id,
-      referredUserId: userId,
-      status: "pending",
-      commission: 0,
-      createdAt: Date.now(),
-    });
-
-    return `Test referral created with ID: ${referralId}`;
-  },
-}); 
+ 

@@ -7,13 +7,9 @@ export function ReferralsDashboard() {
   const referralStats = useQuery(api.referrals.getReferralStats);
   const allReferrals = useQuery(api.referrals.getAllReferrals);
   const generateReferralCode = useMutation(api.referrals.generateReferralCode);
-  const backfillCodes = useMutation(api.referrals.backfillReferralCodes);
-  const createTestReferral = useMutation(api.referrals.createTestReferral);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [isBackfilling, setIsBackfilling] = useState(false);
-  const [testCode, setTestCode] = useState("");
 
   const handleGenerateCode = async () => {
     if (referralStats?.referralCode) return;
@@ -26,32 +22,6 @@ export function ReferralsDashboard() {
       toast.error("Failed to generate referral code");
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleBackfill = async () => {
-    setIsBackfilling(true);
-    try {
-      const result = await backfillCodes();
-      toast.success(`Backfill complete: ${result.updated}/${result.processed} users updated`);
-    } catch (error: any) {
-      toast.error(`Backfill failed: ${error.message}`);
-    } finally {
-      setIsBackfilling(false);
-    }
-  };
-
-  const handleTestReferral = async () => {
-    if (!testCode.trim()) {
-      toast.error("Please enter a referral code to test");
-      return;
-    }
-    
-    try {
-      const result = await createTestReferral({ referralCode: testCode.trim() });
-      toast.success(result);
-    } catch (error: any) {
-      toast.error(`Test failed: ${error.message}`);
     }
   };
 
@@ -406,61 +376,6 @@ export function ReferralsDashboard() {
             </p>
           </div>
         )}
-      </div>
-
-      {/* Debug & Testing Section */}
-      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🔧 Debug & Testing</h3>
-        <div className="space-y-4">
-          {/* Backfill Section */}
-          <div className="bg-white p-4 rounded border">
-            <h4 className="font-medium text-gray-900 mb-2">1. Generate Codes for Existing Users</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              If existing users don't have referral codes, run this to generate them.
-            </p>
-            <button
-              onClick={handleBackfill}
-              disabled={isBackfilling}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isBackfilling ? "Processing..." : "Backfill Referral Codes"}
-            </button>
-          </div>
-
-          {/* Test Referral Section */}
-          <div className="bg-white p-4 rounded border">
-            <h4 className="font-medium text-gray-900 mb-2">2. Test Referral Creation</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Enter a referral code to test creating a referral entry:
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={testCode}
-                onChange={(e) => setTestCode(e.target.value.toUpperCase())}
-                placeholder="Enter referral code"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-              />
-              <button
-                onClick={handleTestReferral}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Test Create Referral
-              </button>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="bg-white p-4 rounded border">
-            <h4 className="font-medium text-gray-900 mb-2">3. How to Test Referral Flow</h4>
-            <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-              <li>Copy your referral code from above</li>
-              <li>Open an incognito window and go to: <code className="bg-gray-200 px-1 rounded">{window.location.origin}?ref=YOURCODE</code></li>
-              <li>Create a new account with different email</li>
-              <li>Check this dashboard - you should see the referral appear</li>
-            </ol>
-          </div>
-        </div>
       </div>
     </div>
   );

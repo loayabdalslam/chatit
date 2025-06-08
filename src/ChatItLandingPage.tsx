@@ -267,6 +267,7 @@ export function ChatItLandingPage({ onGetStarted, onSignUp }: ChatItLandingPageP
             <a href="#features" className="text-sm font-medium hover:text-gray-600 transition-colors">Features</a>
             <a href="#pricing" className="text-sm font-medium hover:text-gray-600 transition-colors">Pricing</a>
             <a href="#faq" className="text-sm font-medium hover:text-gray-600 transition-colors">FAQ</a>
+            <a href="/contact" className="text-sm font-medium hover:text-gray-600 transition-colors">Contact</a>
           </nav>
           
           <div className="hidden md:flex items-center gap-3">
@@ -307,6 +308,7 @@ export function ChatItLandingPage({ onGetStarted, onSignUp }: ChatItLandingPageP
             <a href="#features" className="text-lg font-medium" onClick={toggleMenu}>Features</a>
             <a href="#pricing" className="text-lg font-medium" onClick={toggleMenu}>Pricing</a>
             <a href="#faq" className="text-lg font-medium" onClick={toggleMenu}>FAQ</a>
+            <a href="/contact" className="text-lg font-medium" onClick={toggleMenu}>Contact</a>
                          <div className="flex flex-col gap-3 mt-6">
                <button 
                  onClick={onGetStarted}
@@ -660,9 +662,7 @@ export function ChatItLandingPage({ onGetStarted, onSignUp }: ChatItLandingPageP
               </div>
               <span className="text-xl font-bold">CHATIT</span>
             </div>
-            <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} ChatIt. All rights reserved.
-            </p>
+        v
           </div>
         </div>
       </footer>

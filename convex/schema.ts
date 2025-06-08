@@ -162,6 +162,51 @@ const applicationTables = {
     createdAt: v.number(),
   }).index("by_referral", ["referralId"])
     .index("by_referrer", ["referrerId"]),
+
+  contactMessages: defineTable({
+    name: v.string(),
+    email: v.string(),
+    subject: v.optional(v.string()),
+    message: v.string(),
+    status: v.string(), // "new", "read", "replied", "closed"
+    priority: v.optional(v.string()), // "low", "medium", "high", "urgent"
+    createdAt: v.number(),
+    respondedAt: v.optional(v.number()),
+    respondedBy: v.optional(v.id("users")),
+    response: v.optional(v.string()),
+  }).index("by_status", ["status"])
+    .index("by_created_at", ["createdAt"]),
+
+  pageVisits: defineTable({
+    page: v.string(),
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    referrer: v.optional(v.string()),
+    timestamp: v.number(),
+    userId: v.optional(v.id("users")),
+    sessionId: v.optional(v.string()),
+  }).index("by_page", ["page"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_user", ["userId"]),
+
+  analytics: defineTable({
+    type: v.string(), // "user_signup", "subscription_created", "message_sent", "page_view", etc.
+    userId: v.optional(v.id("users")),
+    metadata: v.optional(v.any()), // Additional data specific to the event
+    timestamp: v.number(),
+    value: v.optional(v.number()), // Numeric value for aggregations
+  }).index("by_type", ["type"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_user", ["userId"]),
+
+  adminSessions: defineTable({
+    sessionId: v.string(),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  }).index("by_session_id", ["sessionId"])
+    .index("by_expires_at", ["expiresAt"]),
 };
 
 export default defineSchema({

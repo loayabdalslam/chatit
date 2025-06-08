@@ -15,6 +15,7 @@ import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as chatbots from "../chatbots.js";
+import type * as contact from "../contact.js";
 import type * as conversations from "../conversations.js";
 import type * as documents from "../documents.js";
 import type * as http from "../http.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
   chatbots: typeof chatbots;
+  contact: typeof contact;
   conversations: typeof conversations;
   documents: typeof documents;
   http: typeof http;
