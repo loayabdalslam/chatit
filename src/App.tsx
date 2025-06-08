@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../convex/_generated/api";
-import { AuthPage } from "./components/auth";
+import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
-import { LandingPage } from "./LandingPage";
+import { ChatItLandingPage } from "./ChatItLandingPage";
 import { Dashboard } from "./Dashboard";
 import { ChatbotList } from "./ChatbotList";
 import { ChatbotForm } from "./ChatbotForm";
@@ -18,6 +18,7 @@ import { WidgetHandler } from "./components/WidgetHandler";
 import { DetailedDashboard } from "./components/DetailedDashboard";
 import { ReportGenerator } from "./components/ReportGenerator";
 import { ConversationHistory } from "./components/ConversationHistory";
+import { ReferralsDashboard } from "./components/ReferralsDashboard";
 import { Sidebar } from "./components/Sidebar";
 import { MessageLimitBanner } from "./components/MessageLimitBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -26,8 +27,7 @@ import { Toaster } from "sonner";
 
 type Page = 
   | "landing"
-  | "login"
-  | "signup"
+  | "auth"
   | "dashboard" 
   | "chatbots" 
   | "create-chatbot" 
@@ -40,7 +40,8 @@ type Page =
   | "widget"
   | "detailed-dashboard"
   | "reports"
-  | "conversations";
+  | "conversations"
+  | "referrals";
 
 // Check if we're in widget mode - handle both /widget/ID and just /ID patterns
 const checkWidgetRoute = () => {
@@ -79,7 +80,7 @@ function AppContent() {
   const { isWidget, chatbotId: widgetChatbotId } = checkWidgetRoute();
 
   useEffect(() => {
-    if (user && (currentPage === "login" || currentPage === "signup" || currentPage === "landing")) {
+    if (user && (currentPage === "auth" || currentPage === "landing")) {
       setCurrentPage("dashboard");
     }
   }, [user, currentPage]);
@@ -119,31 +120,15 @@ function AppContent() {
     setCurrentPage("landing");
   };
 
-  const renderLoginPage = () => (
-    <AuthPage
-      onSuccess={() => setCurrentPage("dashboard")}
-      onBackToHome={() => setCurrentPage("landing")}
-      initialMode="login"
-    />
-  );
-
   const renderContent = () => {
     switch (currentPage) {
       case "landing":
-        return <LandingPage 
-          onGetStarted={() => setCurrentPage("login")}
-          onSignUp={() => setCurrentPage("signup")}
+        return <ChatItLandingPage 
+          onGetStarted={() => setCurrentPage("auth")}
+          onSignUp={() => setCurrentPage("auth")}
         />;
-      case "login":
-        return renderLoginPage();
-      case "signup":
-        return (
-          <AuthPage
-            onSuccess={() => setCurrentPage("dashboard")}
-            onBackToHome={() => setCurrentPage("landing")}
-            initialMode="signup"
-          />
-        );
+      case "auth":
+        return <SignInForm onSuccess={() => setCurrentPage("dashboard")} />;
       case "dashboard":
         return <Dashboard />;
       case "detailed-dashboard":
@@ -200,6 +185,8 @@ function AppContent() {
         return <AdminDashboard />;
       case "admin-setup":
         return <AdminSetup onComplete={() => setCurrentPage("admin")} />;
+      case "referrals":
+        return <ReferralsDashboard />;
       default:
         return <Dashboard />;
     }
@@ -214,22 +201,14 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 transition-colors duration-200">
       <Unauthenticated>
         {currentPage === "landing" ? (
-          <LandingPage 
-            onGetStarted={() => setCurrentPage("login")}
-            onSignUp={() => setCurrentPage("signup")}
+          <ChatItLandingPage 
+            onGetStarted={() => setCurrentPage("auth")}
+            onSignUp={() => setCurrentPage("auth")}
           />
-        ) : currentPage === "signup" ? (
-          <AuthPage
-            onSuccess={() => setCurrentPage("dashboard")}
-            onBackToHome={() => setCurrentPage("landing")}
-            initialMode="signup"
-          />
+        ) : currentPage === "auth" ? (
+          <SignInForm onSuccess={() => setCurrentPage("dashboard")} />
         ) : (
-          <AuthPage
-            onSuccess={() => setCurrentPage("dashboard")}
-            onBackToHome={() => setCurrentPage("landing")}
-            initialMode="login"
-          />
+          <SignInForm onSuccess={() => setCurrentPage("dashboard")} />
         )}
       </Unauthenticated>
       

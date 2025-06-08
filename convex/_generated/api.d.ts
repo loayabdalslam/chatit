@@ -18,6 +18,8 @@ import type * as chatbots from "../chatbots.js";
 import type * as conversations from "../conversations.js";
 import type * as documents from "../documents.js";
 import type * as http from "../http.js";
+import type * as landing from "../landing.js";
+import type * as referrals from "../referrals.js";
 import type * as reports from "../reports.js";
 import type * as router from "../router.js";
 import type * as sentiment from "../sentiment.js";
@@ -50,6 +52,8 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   documents: typeof documents;
   http: typeof http;
+  landing: typeof landing;
+  referrals: typeof referrals;
   reports: typeof reports;
   router: typeof router;
   sentiment: typeof sentiment;

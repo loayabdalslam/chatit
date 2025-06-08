@@ -2,6 +2,19 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+// Extend authTables with referralCode
+const extendedAuthTables = {
+  ...authTables,
+  users: defineTable({
+    ...authTables.users.validator._def,
+    referralCode: v.optional(v.string()),
+  })
+    .index("by_referral_code", ["referralCode"])
+    .searchIndex("search_users", {
+      searchField: "email",
+    }),
+};
+
 const applicationTables = {
   chatbots: defineTable({
     name: v.string(),
@@ -70,7 +83,9 @@ const applicationTables = {
     currentPeriodEnd: v.number(),
     messageLimit: v.number(),
     messagesUsed: v.number(),
-  }).index("by_user", ["userId"]),
+    referredBy: v.optional(v.id("users")),
+  }).index("by_user", ["userId"])
+    .index("by_referred_by", ["referredBy"]),
 
   reports: defineTable({
     userId: v.id("users"),
@@ -122,9 +137,22 @@ const applicationTables = {
     timestamp: v.optional(v.number()),
     confidence: v.optional(v.number()),
   }).index("by_conversation", ["conversationId"]),
+
+  referrals: defineTable({
+    referrerId: v.id("users"),
+    referredUserId: v.id("users"),
+    status: v.string(), // "pending", "completed", "paid"
+    commission: v.number(), // 20% of subscription price
+    subscriptionId: v.id("subscriptions"),
+    paidAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_referrer", ["referrerId"])
+    .index("by_referred_user", ["referredUserId"])
+    .index("by_subscription", ["subscriptionId"]),
 };
 
 export default defineSchema({
-  ...authTables,
+  ...extendedAuthTables,
   ...applicationTables,
 });

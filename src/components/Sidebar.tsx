@@ -5,7 +5,7 @@ import { Id } from "../../convex/_generated/dataModel";
 
 type Page = 
   | "landing"
-  | "login"
+  | "auth"
   | "dashboard" 
   | "chatbots" 
   | "create-chatbot" 
@@ -18,7 +18,8 @@ type Page =
   | "widget"
   | "detailed-dashboard"
   | "reports"
-  | "conversations";
+  | "conversations"
+  | "referrals";
 
 interface SidebarProps {
   currentPage: Page;
@@ -47,6 +48,7 @@ export function Sidebar({
     { id: "dashboard", label: "Dashboard", icon: "📊" },
     { id: "chatbots", label: "Chatbots", icon: "🤖" },
     { id: "analytics", label: "Analytics", icon: "📈" },
+    { id: "referrals", label: "Referrals", icon: "🎁" },
     { id: "subscription", label: "Subscription", icon: "💳" },
   ];
 

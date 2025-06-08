@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -7,6 +9,14 @@ interface LandingPageProps {
 
 export function LandingPage({ onGetStarted, onSignUp }: LandingPageProps) {
   const [email, setEmail] = useState("");
+
+  // Real-time stats hook
+  const stats = useQuery(api.landing.getLandingStats) || {
+    totalUsers: 0,
+    totalConversations: 0,
+    totalMessages: 0,
+    satisfactionScore: 0,
+  };
 
   const features = [
     {
@@ -124,6 +134,30 @@ export function LandingPage({ onGetStarted, onSignUp }: LandingPageProps) {
               <div className="flex items-center text-gray-600">
                 <span className="text-sm">✓ No credit card required</span>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Real-time Stats Section */}
+      <section className="py-10 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="bg-blue-50 rounded-lg p-6 shadow-sm">
+              <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalUsers}</div>
+              <div className="text-gray-700 text-sm font-medium">Users</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-6 shadow-sm">
+              <div className="text-3xl font-bold text-green-600 mb-2">{stats.totalConversations}</div>
+              <div className="text-gray-700 text-sm font-medium">Conversations</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-6 shadow-sm">
+              <div className="text-3xl font-bold text-purple-600 mb-2">{stats.totalMessages}</div>
+              <div className="text-gray-700 text-sm font-medium">Messages Sent</div>
+            </div>
+            <div className="bg-yellow-50 rounded-lg p-6 shadow-sm">
+              <div className="text-3xl font-bold text-yellow-600 mb-2">{stats.satisfactionScore}%</div>
+              <div className="text-gray-700 text-sm font-medium">Satisfaction Score</div>
             </div>
           </div>
         </div>
