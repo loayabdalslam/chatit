@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { DemoChatbotSetup } from "./components/DemoChatbotSetup";
 
 interface ChatbotListProps {
   onSelectChatbot: (id: Id<"chatbots">) => void;
@@ -22,6 +24,7 @@ export function ChatbotList({
 }: ChatbotListProps) {
   const chatbots = useQuery(api.chatbots.list) || [];
   const deleteChatbot = useMutation(api.chatbots.remove);
+  const [showDemoSetup, setShowDemoSetup] = useState(false);
 
   const handleDeleteChatbot = async (id: Id<"chatbots">, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
@@ -32,6 +35,12 @@ export function ChatbotList({
         toast.error("Failed to delete chatbot");
       }
     }
+  };
+
+  const handleDemoChatbotCreated = (chatbotId: string) => {
+    setShowDemoSetup(false);
+    // Auto-redirect to widget generator for the new demo bot
+    onViewWidget(chatbotId as Id<"chatbots">);
   };
 
   return (
@@ -47,17 +56,38 @@ export function ChatbotList({
       </div>
 
       {chatbots.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">🤖</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No chatbots yet</h3>
-          <p className="text-gray-600 mb-6">Create your first chatbot to get started</p>
-          <button
-            onClick={onCreateChatbot}
-            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium"
-          >
-            Create Your First Chatbot
-          </button>
-        </div>
+        showDemoSetup ? (
+          <DemoChatbotSetup onChatbotCreated={handleDemoChatbotCreated} />
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-6xl mb-4">🤖</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No chatbots yet</h3>
+            <p className="text-gray-600 mb-6">Create your first chatbot to get started</p>
+            
+            <div className="space-y-4 max-w-md mx-auto">
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => setShowDemoSetup(true)}
+                  className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <span>🚀</span>
+                  Quick Demo Setup
+                </button>
+                <button
+                  onClick={onCreateChatbot}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Create Custom Chatbot
+                </button>
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                <p><strong>Quick Demo:</strong> Creates a pre-configured support bot ready to test</p>
+                <p><strong>Custom:</strong> Build from scratch with your own training data</p>
+              </div>
+            </div>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {chatbots.map((chatbot) => (

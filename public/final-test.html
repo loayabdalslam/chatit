@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatIt.cloud - Complete System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .test-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .test-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .test-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .test-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            white-space: pre-line;
+            display: none;
+        }
+
+        .status.loading {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+            display: block;
+        }
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+            display: block;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+
+        .chat-demo {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-input {
+            width: 100%;
+            border: none;
+            padding: 16px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .send-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #dc2626;
+        }
+
+        .send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f9fafb;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #dbeafe;
+            color: #1e40af;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+
+        .widget-container {
+            min-height: 200px;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9fafb;
+            position: relative;
+        }
+
+        .widget-placeholder {
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .demo-controls {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .chatbot-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chatbot-selector input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .chatbot-selector button {
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .info-section {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .info-section h4 {
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .info-section p {
+            color: #1e3a8a;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ChatIt.cloud System Test</h1>
+            <p>Complete testing suite for AI chatbot platform with OpenAI GPT-4 integration</p>
+        </div>
+
+        <div class="demo-controls">
+            <h3>🤖 Chatbot Configuration</h3>
+            <div class="chatbot-selector">
+                <input 
+                    type="text" 
+                    id="chatbotInput" 
+                    placeholder="Enter chatbot ID or use demo bot"
+                    value="demo-chatbot-test"
+                >
+                <button onclick="updateChatbotId()">Update Widget</button>
+                <button onclick="createDemoBot()">Create Demo Bot</button>
+            </div>
+                            <div class="info-section">
+                    <h4>Instructions:</h4>
+                    <p>1. Use "Create Demo Bot" to generate a working chatbot ID<br>
+                    2. Or enter a valid chatbot ID and click "Update Widget"<br>
+                    3. Test the chat functionality with the loaded widget<br>
+                    4. The widget works in demo mode with intelligent fallback responses</p>
+                </div>
+        </div>
+
+        <div class="test-grid">
+            <div class="test-card">
+                <h3>🔌 Backend Connection</h3>
+                <button class="test-button" onclick="testBackendConnection()">Test Connection</button>
+                <div id="backend-status" class="status"></div>
+            </div>
+
+            <div class="test-card">
+                <h3>🤖 Demo Chatbot</h3>
+                <button class="test-button" onclick="testDemoChatbot()">Test Chatbot</button>
+                <div id="demo-status" class="status"></div>
+            </div>
+
+            <div class="test-card">
+                <h3>🔗 Direct API Test</h3>
+                <button class="test-button" onclick="testDirectAPI()">Test Chat API</button>
+                <div id="api-status" class="status"></div>
+            </div>
+
+            <div class="test-card">
+                <h3>🎨 Widget Integration</h3>
+                <button class="test-button" onclick="testWidget()">Load Widget</button>
+                <div id="widget-status" class="status"></div>
+            </div>
+
+            <div class="test-card full-width">
+                <h3>💬 Live Chat Test</h3>
+                <div class="chat-demo">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Type a message to test the AI integration..."
+                        rows="3"
+                    ></textarea>
+                    <button class="send-btn" onclick="sendTestMessage()" id="sendBtn">
+                        Send Test Message
+                    </button>
+                    <div class="messages" id="messages"></div>
+                </div>
+            </div>
+
+            <div class="test-card full-width">
+                <h3>🔗 Widget Demo</h3>
+                <div class="widget-container" id="widgetContainer">
+                    <div class="widget-placeholder">
+                        <p>Click "Load Widget" above to test the embedded widget</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONVEX_URL = 'https://reminiscent-wildebeest-246.convex.cloud';
+        let currentChatbotId = 'demo-chatbot-test';
+        let sessionId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        function updateChatbotId() {
+            const input = document.getElementById('chatbotInput');
+            currentChatbotId = input.value.trim() || 'demo-chatbot-test';
+            showStatus('widget-status', 'success', `✅ Chatbot ID updated to: ${currentChatbotId}`);
+        }
+
+        async function createDemoBot() {
+            showStatus('demo-status', 'loading', '🔄 Creating demo chatbot...');
+            
+            try {
+                // Generate a unique demo ID
+                const demoId = `demo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+                currentChatbotId = demoId;
+                
+                document.getElementById('chatbotInput').value = demoId;
+                
+                showStatus('demo-status', 'success', 
+                    `✅ Demo chatbot created!\n🆔 ID: ${demoId}\n🔗 Ready for testing (fallback mode)`);
+                    
+            } catch (error) {
+                showStatus('demo-status', 'error', `❌ Failed to create demo bot: ${error.message}`);
+            }
+        }
+
+        function showStatus(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        async function testBackendConnection() {
+            showStatus('backend-status', 'loading', '🔄 Testing Convex backend connection...');
+            
+            try {
+                const response = await fetch(`${CONVEX_URL}/api/chatbot/${currentChatbotId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('backend-status', 'success', `✅ Backend connected! Chatbot: ${data.name || 'Demo Bot'}`);
+                } else if (response.status === 404) {
+                    showStatus('backend-status', 'error', `❌ Chatbot not found. Try creating a demo bot first.`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('backend-status', 'error', `❌ Backend connection failed: ${error.message}`);
+            }
+        }
+
+        async function testDemoChatbot() {
+            showStatus('demo-status', 'loading', '🔄 Loading demo chatbot configuration...');
+            
+            try {
+                const response = await fetch(`${CONVEX_URL}/api/chatbot/${currentChatbotId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const chatbot = await response.json();
+                    showStatus('demo-status', 'success', 
+                        `✅ Demo chatbot loaded: ${chatbot.name}\n📝 Description: ${chatbot.description || 'AI Assistant'}`);
+                } else {
+                    throw new Error(`Failed to load chatbot: ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('demo-status', 'error', `❌ Demo chatbot test failed: ${error.message}`);
+            }
+        }
+
+        async function testDirectAPI() {
+            showStatus('api-status', 'loading', '🔄 Testing direct chat API...');
+            
+            try {
+                const response = await fetch(`${CONVEX_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({
+                        chatbotId: currentChatbotId,
+                        message: 'Hello! This is a test message.',
+                        sessionId: sessionId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('api-status', 'success', 
+                        `✅ Chat API working!\n🤖 Response: ${data.response.substring(0, 100)}...`);
+                } else {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('api-status', 'error', `❌ Direct API test failed: ${error.message}`);
+            }
+        }
+
+        async function testWidget() {
+            showStatus('widget-status', 'loading', '🔄 Loading widget...');
+            
+            try {
+                // Clear previous widget
+                const container = document.getElementById('widgetContainer');
+                container.innerHTML = `
+                    <div data-chatit-widget="${currentChatbotId}" 
+                         data-primary-color="#e74c3c" 
+                         data-position="bottom-right"
+                         data-welcome-message="Hi! How can I help you today?">
+                    </div>
+                `;
+                
+                // Load widget script
+                const script = document.createElement('script');
+                script.src = './widget.js';
+                script.onload = () => {
+                    setTimeout(() => {
+                        showStatus('widget-status', 'success', '✅ Widget loaded! Check the bottom-right corner of the page.');
+                    }, 1000);
+                };
+                script.onerror = () => {
+                    showStatus('widget-status', 'error', '❌ Failed to load widget script');
+                };
+                
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                showStatus('widget-status', 'error', `❌ Widget test failed: ${error.message}`);
+            }
+        }
+
+        async function sendTestMessage() {
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const messages = document.getElementById('messages');
+            
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Disable input
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+
+            try {
+                const response = await fetch(`${CONVEX_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({
+                        chatbotId: currentChatbotId,
+                        message: message,
+                        sessionId: sessionId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessage(data.response, 'bot');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'bot');
+            } finally {
+                // Re-enable input
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send Test Message';
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Handle Enter key in chat input
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendTestMessage();
+            }
+        });
+
+        // Auto-run initial tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testBackendConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

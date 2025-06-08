@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real AI Widget Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .features {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .features h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #48bb78;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .test-messages {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .test-messages h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .message-button {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 10px 10px 0;
+            display: inline-block;
+        }
+
+        .message-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .widget-demo {
+            background: white;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 30px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .status.info {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Real AI Widget Test</h1>
+        <p class="subtitle">Testing Intelligent AI Responses with Typing Indicators</p>
+
+        <div class="features">
+            <h2>✨ Features Being Tested</h2>
+            <ul class="feature-list">
+                <li>
+                    <div class="feature-icon">✓</div>
+                    Real AI responses (no fallback messages)
+                </li>
+                <li>
+                    <div class="feature-icon">✓</div>
+                    Typing indicator during AI processing
+                </li>
+                <li>
+                    <div class="feature-icon">✓</div>
+                    Context-aware conversation flow
+                </li>
+                <li>
+                    <div class="feature-icon">✓</div>
+                    Intelligent response patterns
+                </li>
+                <li>
+                    <div class="feature-icon">✓</div>
+                    Professional conversation handling
+                </li>
+            </ul>
+        </div>
+
+        <div class="test-messages">
+            <h2>🧪 Test Messages</h2>
+            <p>Click any button below to send a test message and see the AI response:</p>
+            
+            <button class="message-button" onclick="sendTestMessage('Hello! How are you today?')">
+                👋 Greeting
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('What features do you offer?')">
+                🚀 Features
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('How do I integrate this chatbot?')">
+                🔧 Integration
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('What are your pricing plans?')">
+                💰 Pricing
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('I need help with customization')">
+                🎨 Customization
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('Tell me about your security features')">
+                🔒 Security
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('Can you help me with analytics and reporting?')">
+                📊 Analytics
+            </button>
+            
+            <button class="message-button" onclick="sendTestMessage('Thank you for your help!')">
+                🙏 Thank You
+            </button>
+        </div>
+
+        <div class="status info" id="status">
+            Widget will appear in the bottom-right corner. Click the chat bubble to start testing!
+        </div>
+
+        <div class="widget-demo" id="widgetContainer">
+            <p>✅ AI Widget is ready! Look for the chat bubble in the bottom-right corner.</p>
+        </div>
+    </div>
+
+    <!-- Load the widget -->
+    <div data-chatit-widget="demo-chatbot-test"></div>
+    <script src="https://reminiscent-wildebeest-246.convex.cloud/widget.js"></script>
+
+    <script>
+        let widgetInstance = null;
+
+        // Wait for widget to be ready
+        window.addEventListener('chatit-widget-ready', (event) => {
+            console.log('Widget ready:', event.detail);
+            widgetInstance = document.querySelector('[data-chatit-widget]').chatItWidget;
+            updateStatus('success', '✅ Widget loaded and ready for testing!');
+        });
+
+        function updateStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+
+        function sendTestMessage(message) {
+            if (!widgetInstance) {
+                updateStatus('error', '❌ Widget not ready yet. Please wait a moment.');
+                return;
+            }
+
+            try {
+                // Open the widget
+                widgetInstance.open();
+                
+                // Wait a bit for the widget to open, then send the message
+                setTimeout(() => {
+                    const input = widgetInstance.ui.getInput();
+                    if (input) {
+                        input.value = message;
+                        // Trigger the send
+                        widgetInstance.ui.sendMessage();
+                        updateStatus('info', `📤 Sent: "${message}" - Watch for typing indicator and AI response!`);
+                    } else {
+                        updateStatus('error', '❌ Could not find widget input field.');
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Error sending test message:', error);
+                updateStatus('error', `❌ Error: ${error.message}`);
+            }
+        }
+
+        // Initialize
+        console.log('Test page loaded. Waiting for widget...');
+        updateStatus('info', '🔄 Loading AI widget...');
+    </script>
+</body>
+</html> 

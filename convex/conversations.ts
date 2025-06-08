@@ -111,7 +111,8 @@ export const sendMessage = mutation({
     conversationId: v.id("conversations"),
     content: v.string(),
   },
-  handler: async (ctx, args) => {
+  returns: v.string(),
+  handler: async (ctx, args): Promise<string> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -131,15 +132,26 @@ export const sendMessage = mutation({
       timestamp: Date.now(),
     });
 
-    // Generate AI response
-    const response = await generateAIResponse(ctx, args.conversationId, args.content);
+    // Get immediate mock response (mutations can't call actions)
+    const response: string = await ctx.runQuery(internal.ai.generateMockResponse, {
+      userMessage: args.content,
+      chatbotId: conversation.chatbotId,
+      conversationHistory: [], // Simple case for mutation
+    });
     
-    // Insert AI response
+    // Insert response immediately
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       content: response,
       role: "assistant",
       timestamp: Date.now(),
+    });
+
+    // Schedule enhanced AI response generation (async)
+    await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
+      conversationId: args.conversationId,
+      userMessage: args.content,
+      chatbotId: conversation.chatbotId,
     });
 
     // Trigger sentiment analysis for user message
@@ -220,7 +232,8 @@ export const sendMessageInternal = internalMutation({
     conversationId: v.id("conversations"),
     content: v.string(),
   },
-  handler: async (ctx, args) => {
+  returns: v.string(),
+  handler: async (ctx, args): Promise<string> => {
     // Insert user message
     const userMessageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -229,8 +242,18 @@ export const sendMessageInternal = internalMutation({
       timestamp: Date.now(),
     });
 
-    // Generate AI response
-    const response = await generateAIResponse(ctx, args.conversationId, args.content);
+    // Get conversation to get chatbot ID for AI response
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) {
+      return "I'm sorry, I couldn't process your request.";
+    }
+
+    // Generate mock response immediately (mutations can't call actions)
+    const response: string = await ctx.runQuery(internal.ai.generateMockResponse, {
+      userMessage: args.content,
+      chatbotId: conversation.chatbotId,
+      conversationHistory: [], // Simple case for mutation
+    });
     
     // Insert AI response
     await ctx.db.insert("messages", {
@@ -238,6 +261,13 @@ export const sendMessageInternal = internalMutation({
       content: response,
       role: "assistant",
       timestamp: Date.now(),
+    });
+
+    // Schedule enhanced AI response generation (async)
+    await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
+      conversationId: args.conversationId,
+      userMessage: args.content,
+      chatbotId: conversation.chatbotId,
     });
 
     // Trigger sentiment analysis for user message
@@ -251,56 +281,4 @@ export const sendMessageInternal = internalMutation({
   },
 });
 
-// Helper function to generate AI responses
-async function generateAIResponse(ctx: any, conversationId: Id<"conversations">, userMessage: string): Promise<string> {
-  try {
-    // Get conversation context
-    const conversation = await ctx.db.get(conversationId);
-    if (!conversation) {
-      return "I'm sorry, I couldn't process your request.";
-    }
 
-    // Get chatbot configuration
-    const chatbot = await ctx.db.get(conversation.chatbotId);
-    if (!chatbot) {
-      return "I'm sorry, I couldn't process your request.";
-    }
-
-    // Get recent messages for context
-    const recentMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_conversation", (q: any) => q.eq("conversationId", conversationId))
-      .order("desc")
-      .take(10);
-
-    // Simple rule-based responses for demo
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return `Hello! I'm ${chatbot.name}. How can I help you today?`;
-    }
-    
-    if (lowerMessage.includes("help")) {
-      return "I'm here to help! You can ask me questions about our products and services.";
-    }
-    
-    if (lowerMessage.includes("price") || lowerMessage.includes("cost")) {
-      return "For pricing information, please contact our sales team or visit our pricing page.";
-    }
-    
-    if (lowerMessage.includes("thank")) {
-      return "You're welcome! Is there anything else I can help you with?";
-    }
-    
-    if (lowerMessage.includes("bye") || lowerMessage.includes("goodbye")) {
-      return "Goodbye! Feel free to reach out if you have any more questions.";
-    }
-
-    // Default response
-    return "Thank you for your message. I understand you're asking about: " + userMessage + ". How can I assist you further?";
-    
-  } catch (error) {
-    console.error("Error generating AI response:", error);
-    return "I'm sorry, I'm having trouble processing your request right now. Please try again.";
-  }
-}

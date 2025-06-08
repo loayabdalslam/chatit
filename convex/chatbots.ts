@@ -117,3 +117,32 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+// Public query for widget use (no authentication required)
+export const getPublic = internalQuery({
+  args: { id: v.id("chatbots") },
+  handler: async (ctx, args) => {
+    const chatbot = await ctx.db.get(args.id);
+    if (!chatbot || !chatbot.isActive) {
+      return null;
+    }
+    
+    return {
+      id: chatbot._id,
+      name: chatbot.name,
+      description: chatbot.description,
+      widgetConfig: chatbot.widgetConfig || {
+        primaryColor: "#e74c3c",
+        position: "bottom-right",
+        size: "medium",
+        welcomeMessage: "Hi! How can I help you today?",
+        placeholder: "Type your message...",
+        showBranding: true,
+        borderRadius: 12,
+        fontFamily: "system-ui",
+        animation: "bounce",
+        theme: "light",
+      },
+    };
+  },
+});

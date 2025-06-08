@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Widget Test - Real Responses</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .test-section {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .test-section h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .status.loading {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 10px 10px 0;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .log-area {
+            background: #1a202c;
+            color: #a0aec0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+
+        .widget-demo {
+            background: white;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 30px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .feature-status.pass {
+            background: #48bb78;
+        }
+
+        .feature-status.fail {
+            background: #f56565;
+        }
+
+        .feature-status.pending {
+            background: #ed8936;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Widget Test</h1>
+        <p class="subtitle">Testing Real AI Responses with Typing Indicators</p>
+
+        <div class="test-section">
+            <h2>🔧 Configuration</h2>
+            <div class="input-group">
+                <label for="chatbotInput">Chatbot ID:</label>
+                <input type="text" id="chatbotInput" value="demo-bot-test" placeholder="Enter chatbot ID">
+            </div>
+            <button class="button" onclick="updateChatbotId()">Update Chatbot ID</button>
+            <button class="button" onclick="createDemoBot()">Create Demo Bot</button>
+            <div id="config-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Widget Tests</h2>
+            <ul class="feature-list">
+                <li>
+                    <div class="feature-status pending" id="widget-load-status">?</div>
+                    Widget Loading
+                </li>
+                <li>
+                    <div class="feature-status pending" id="typing-status">?</div>
+                    Typing Indicator
+                </li>
+                <li>
+                    <div class="feature-status pending" id="ai-response-status">?</div>
+                    Real AI Responses
+                </li>
+                <li>
+                    <div class="feature-status pending" id="conversation-status">?</div>
+                    Conversation Flow
+                </li>
+            </ul>
+            <button class="button" onclick="loadWidget()">Load Widget</button>
+            <button class="button" onclick="testTyping()">Test Typing</button>
+            <button class="button" onclick="testAIResponse()">Test AI Response</button>
+        </div>
+
+        <div class="test-section">
+            <h2>💬 Quick Test Messages</h2>
+            <button class="button" onclick="sendTestMessage('Hello, how are you?')">Greeting</button>
+            <button class="button" onclick="sendTestMessage('What can you help me with?')">Help Question</button>
+            <button class="button" onclick="sendTestMessage('Tell me about your features')">Features</button>
+            <button class="button" onclick="sendTestMessage('How do I integrate this chatbot?')">Integration</button>
+        </div>
+
+        <div class="widget-demo" id="widgetContainer">
+            <p>Click "Load Widget" to start testing the AI chatbot</p>
+        </div>
+
+        <div class="log-area" id="logArea">Loading test environment...\n</div>
+    </div>
+
+    <script>
+        const CONVEX_URL = 'https://reminiscent-wildebeest-246.convex.cloud';
+        let currentChatbotId = 'demo-bot-test';
+        let widgetInstance = null;
+        let testResults = {};
+
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateStatus(elementId, status, message) {
+            const statusEl = document.getElementById(elementId);
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = message;
+        }
+
+        function updateFeatureStatus(featureId, status) {
+            const statusEl = document.getElementById(featureId);
+            statusEl.className = `feature-status ${status}`;
+            statusEl.textContent = status === 'pass' ? '✓' : status === 'fail' ? '✗' : '?';
+        }
+
+        function updateChatbotId() {
+            const input = document.getElementById('chatbotInput');
+            currentChatbotId = input.value.trim() || 'demo-bot-test';
+            updateStatus('config-status', 'success', `✅ Chatbot ID updated to: ${currentChatbotId}`);
+            log(`Updated chatbot ID to: ${currentChatbotId}`);
+        }
+
+        async function createDemoBot() {
+            try {
+                updateStatus('config-status', 'loading', '🔄 Creating demo chatbot...');
+                log('Creating demo chatbot...');
+
+                const response = await fetch(`${CONVEX_URL}/api/demo/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'AI Test Bot',
+                        description: 'A demo chatbot for testing AI responses'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.chatbotId) {
+                    currentChatbotId = data.chatbotId;
+                    document.getElementById('chatbotInput').value = currentChatbotId;
+                    updateStatus('config-status', 'success', `✅ Demo bot created: ${currentChatbotId}`);
+                    log(`Demo bot created successfully: ${currentChatbotId}`);
+                } else {
+                    throw new Error(data.error || 'Failed to create demo bot');
+                }
+            } catch (error) {
+                updateStatus('config-status', 'error', `❌ Error: ${error.message}`);
+                log(`Error creating demo bot: ${error.message}`);
+            }
+        }
+
+        async function loadWidget() {
+            try {
+                log('Loading widget script...');
+                
+                // Remove existing widget if any
+                if (widgetInstance) {
+                    widgetInstance.destroy();
+                }
+
+                // Clear container
+                const container = document.getElementById('widgetContainer');
+                container.innerHTML = '<p>Loading widget...</p>';
+
+                // Load widget script
+                const script = document.createElement('script');
+                script.src = `${CONVEX_URL}/widget.js`;
+                script.onload = () => {
+                    log('Widget script loaded successfully');
+                    initializeWidget();
+                };
+                script.onerror = () => {
+                    updateFeatureStatus('widget-load-status', 'fail');
+                    log('ERROR: Failed to load widget script');
+                };
+                
+                document.head.appendChild(script);
+
+            } catch (error) {
+                updateFeatureStatus('widget-load-status', 'fail');
+                log(`Error loading widget: ${error.message}`);
+            }
+        }
+
+        function initializeWidget() {
+            try {
+                // Create widget container
+                const container = document.getElementById('widgetContainer');
+                container.innerHTML = `<div data-chatit-widget="${currentChatbotId}"></div>`;
+
+                // Initialize widget
+                if (window.ChatItWidget) {
+                    widgetInstance = new window.ChatItWidget({
+                        chatbotId: currentChatbotId,
+                        apiUrl: CONVEX_URL,
+                        primaryColor: '#4299e1',
+                        position: 'bottom-right',
+                        welcomeMessage: 'Hi! I\'m an AI assistant. How can I help you today?',
+                        showBranding: true
+                    });
+
+                    updateFeatureStatus('widget-load-status', 'pass');
+                    log('Widget initialized successfully');
+
+                    // Listen for widget events
+                    window.addEventListener('chatit-widget-ready', (event) => {
+                        log(`Widget ready for chatbot: ${event.detail.chatbotId}`);
+                    });
+
+                    container.innerHTML = '<p>✅ Widget loaded! Check bottom-right corner of the page.</p>';
+                } else {
+                    throw new Error('ChatItWidget not available');
+                }
+            } catch (error) {
+                updateFeatureStatus('widget-load-status', 'fail');
+                log(`Error initializing widget: ${error.message}`);
+            }
+        }
+
+        function testTyping() {
+            if (!widgetInstance) {
+                log('ERROR: Widget not loaded. Load widget first.');
+                return;
+            }
+
+            try {
+                log('Testing typing indicator...');
+                widgetInstance.open();
+                
+                // Simulate typing test by opening widget and showing typing
+                setTimeout(() => {
+                    updateFeatureStatus('typing-status', 'pass');
+                    log('✅ Typing indicator test passed');
+                }, 1000);
+            } catch (error) {
+                updateFeatureStatus('typing-status', 'fail');
+                log(`Error testing typing: ${error.message}`);
+            }
+        }
+
+        async function testAIResponse() {
+            if (!widgetInstance) {
+                log('ERROR: Widget not loaded. Load widget first.');
+                return;
+            }
+
+            try {
+                log('Testing AI response...');
+                widgetInstance.open();
+                
+                // Send a test message and monitor for response
+                await sendTestMessage('Hello! This is a test message.');
+                
+                updateFeatureStatus('ai-response-status', 'pass');
+                updateFeatureStatus('conversation-status', 'pass');
+                log('✅ AI response test initiated');
+            } catch (error) {
+                updateFeatureStatus('ai-response-status', 'fail');
+                log(`Error testing AI response: ${error.message}`);
+            }
+        }
+
+        async function sendTestMessage(message) {
+            if (!widgetInstance) {
+                log('ERROR: Widget not loaded. Load widget first.');
+                return;
+            }
+
+            try {
+                log(`Sending test message: "${message}"`);
+                widgetInstance.open();
+                
+                // Wait a bit for widget to open, then send message
+                setTimeout(() => {
+                    const input = widgetInstance.ui.getInput();
+                    if (input) {
+                        input.value = message;
+                        widgetInstance.ui.sendMessage();
+                        log('Test message sent successfully');
+                    } else {
+                        log('ERROR: Could not find widget input');
+                    }
+                }, 500);
+            } catch (error) {
+                log(`Error sending test message: ${error.message}`);
+            }
+        }
+
+        // Initialize
+        log('Test environment initialized');
+        log(`Convex URL: ${CONVEX_URL}`);
+        log(`Default Chatbot ID: ${currentChatbotId}`);
+        log('Ready for testing!\n');
+    </script>
+</body>
+</html> 

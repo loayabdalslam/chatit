@@ -152,148 +152,28 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
 
 
 
-  const generateApiKey = () => {
-    return `widget_${chatbotId.slice(-8)}_${Date.now().toString(36)}`;
-  };
+
 
   const generateWidgetCode = () => {
     const baseUrl = window.location.origin;
-    const apiKey = generateApiKey();
-    const widgetUrl = `${baseUrl}/widget/${chatbotId}?${new URLSearchParams({
-      primaryColor: config.primaryColor,
-      position: config.position,
-      size: config.size,
-      welcomeMessage: config.welcomeMessage,
-      placeholder: config.placeholder,
-      showBranding: config.showBranding.toString(),
-      borderRadius: config.borderRadius.toString(),
-      fontFamily: config.fontFamily,
-      animation: config.animation,
-      apiKey: apiKey
-    }).toString()}`;
-
-    return `<!-- Chatbot Widget Iframe -->
-<!-- Widget ID: ${chatbotId} -->
-<!-- API Key: ${apiKey} (for widget configuration only) -->
-<script>
-(function() {
-  // Chatbot Widget Configuration
-  const widgetConfig = {
-    chatbotId: "${chatbotId}",
-    apiKey: "${apiKey}",
-    src: "${widgetUrl}",
-    position: "${config.position}",
-    size: "${config.size}",
-    animation: "${config.animation}"
-  };
-
-  // Create widget iframe
-  const iframe = document.createElement('iframe');
-  iframe.src = widgetConfig.src;
-  iframe.id = 'chatbot-widget-' + widgetConfig.chatbotId;
-  iframe.setAttribute('title', 'Chatbot Widget');
-  iframe.setAttribute('allow', 'clipboard-write');
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox');
-  iframe.setAttribute('loading', 'lazy');
-  
-  // Initial iframe styling
-  iframe.style.cssText = \`
-    position: fixed;
-    ${config.position.includes('bottom') ? 'bottom: 20px;' : 'top: 20px;'}
-    ${config.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
-    width: ${config.size === 'small' ? '60px' : config.size === 'large' ? '80px' : '70px'};
-    height: ${config.size === 'small' ? '60px' : config.size === 'large' ? '80px' : '70px'};
-    border: none;
-    border-radius: ${config.borderRadius}px;
-    z-index: 999999;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: transparent;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    pointer-events: auto;
-    opacity: 0;
-    transform: scale(0.8);
-  \`;
-
-  // Animation styles
-  const animationStyles = document.createElement('style');
-  animationStyles.id = 'chatbot-widget-animations';
-  animationStyles.textContent = \`
-    @keyframes chatbot-bounce {
-      0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0) scale(1); }
-      40%, 43% { transform: translate3d(0,-8px,0) scale(1.02); }
-      70% { transform: translate3d(0,-4px,0) scale(1.01); }
-    }
-    @keyframes chatbot-pulse {
-      0% { transform: scale(1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
-      50% { transform: scale(1.05); box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2); }
-      100% { transform: scale(1); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
-    }
-    @keyframes chatbot-shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-3px); }
-      75% { transform: translateX(3px); }
-    }
-    @keyframes chatbot-fadeIn {
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
     
-    #chatbot-widget-${chatbotId} {
-      animation: chatbot-fadeIn 0.5s ease-out forwards;
-    }
-    
-    ${config.animation !== 'none' ? `
-    #chatbot-widget-${chatbotId}:not(.chatbot-expanded) {
-      animation: chatbot-fadeIn 0.5s ease-out forwards, 
-                 chatbot-${config.animation} ${config.animation === 'shake' ? '0.6s' : '2s'} ease-in-out infinite 1s;
-    }` : ''}
-  \`;
+    // Generate clean data attributes for configuration (only include non-default values)
+    const dataAttributes = [
+      `data-chatit-widget="${chatbotId}"`,
+      config.primaryColor !== "#2563eb" ? `data-primary-color="${config.primaryColor}"` : "",
+      config.position !== "bottom-right" ? `data-position="${config.position}"` : "",
+      config.size !== "medium" ? `data-size="${config.size}"` : "",
+      config.welcomeMessage !== "Hi! How can I help you today?" ? `data-welcome-message="${config.welcomeMessage}"` : "",
+      config.placeholder !== "Type your message..." ? `data-placeholder="${config.placeholder}"` : "",
+      !config.showBranding ? `data-show-branding="false"` : "",
+      config.borderRadius !== 12 ? `data-border-radius="${config.borderRadius}"` : "",
+      config.fontFamily !== "system-ui" ? `data-font-family="${config.fontFamily}"` : "",
+      config.animation !== "bounce" ? `data-animation="${config.animation}"` : ""
+    ].filter(attr => attr).join('\n     ');
 
-  // Add iframe and styles to page
-  if (!document.getElementById('chatbot-widget-animations')) {
-    document.head.appendChild(animationStyles);
-  }
-  document.body.appendChild(iframe);
-
-  // Handle iframe messages for dynamic resizing and interactions
-  window.addEventListener('message', function(event) {
-    if (event.origin !== '${baseUrl}') return;
-    
-    const data = event.data;
-    
-    if (data.type === 'CHATBOT_WIDGET_RESIZE') {
-      iframe.style.width = data.width + 'px';
-      iframe.style.height = data.height + 'px';
-      
-      // Add expanded class when chat is open
-      if (data.expanded) {
-        iframe.classList.add('chatbot-expanded');
-      } else {
-        iframe.classList.remove('chatbot-expanded');
-      }
-    }
-    
-    if (data.type === 'CHATBOT_WIDGET_READY') {
-      console.log('Chatbot widget loaded successfully');
-    }
-  });
-
-  // Widget error handling
-  iframe.onerror = function() {
-    console.error('Failed to load chatbot widget');
-    iframe.style.display = 'none';
-  };
-
-  // Widget ready notification
-  iframe.onload = function() {
-    console.log('Chatbot widget iframe loaded');
-  };
-
-  console.log('Chatbot widget initialized with ID:', widgetConfig.chatbotId);
-})();
-</script>`;
+    return `<div ${dataAttributes}>
+</div>
+<script src="${baseUrl}/widget.js"></script>`;
   };
 
   const copyToClipboard = (text: string) => {
@@ -309,7 +189,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
     { id: "customize", label: " Customize", icon: "🎨" },
     { id: "preview", label: "Preview", icon: "👁️" },
     { id: "test", label: "Test Chat", icon: "🧪" },
-    { id: "code", label: "Get Iframe", icon: "📦" }
+    { id: "code", label: "Get Widget", icon: "📦" }
   ];
 
   return (
@@ -699,7 +579,7 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
             {/* Code Tab */}
             {activeTab === "code" && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-900">Iframe Widget Code</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Widget Embed Code</h3>
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -719,18 +599,18 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h5 className="font-semibold text-blue-900 mb-2">🎯 Enhanced Iframe Widget Features</h5>
+                    <h5 className="font-semibold text-blue-900 mb-2">🎯 Clean Widget Integration Features</h5>
                     <ul className="list-disc list-inside space-y-1 text-sm text-blue-800">
-                      <li>Secure iframe-based integration with sandbox protection</li>
-                      <li>API key for secure widget configuration</li>
-                      <li>Fully customizable appearance and animations</li>
-                      <li>Real-time chat functionality with message handling</li>
+                      <li>Simple data-attribute configuration</li>
+                      <li>Clean HTML with no complex scripts or API keys</li>
+                      <li>Universal compatibility - works on any website</li>
+                      <li>Automatic configuration detection from data attributes</li>
+                      <li>CORS-free integration using your domain</li>
+                      <li>Lightweight and fast loading</li>
+                      <li>No iframe complexity or messaging</li>
                       <li>Responsive design optimized for all devices</li>
-                      <li>Smart resizing and smooth transitions</li>
-                      <li>Cross-origin messaging with security validation</li>
-                      <li>Error handling and fallback mechanisms</li>
-                      <li>Console logging for debugging</li>
-                      <li>Dynamic loading with fade-in animation</li>
+                      <li>Secure OpenAI integration on the backend</li>
+                      <li>Professional appearance with smooth animations</li>
                     </ul>
                   </div>
                 </div>
@@ -738,57 +618,25 @@ export function WidgetGenerator({ chatbotId, onBack }: WidgetGeneratorProps) {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h4 className="font-semibold text-yellow-900 mb-2">📋 Installation Instructions</h4>
                   <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-800">
-                    <li>Copy the iframe embed code above</li>
+                    <li>Copy the clean widget embed code above</li>
                     <li>Paste it into your website's HTML, preferably before the closing &lt;/body&gt; tag</li>
-                    <li>The iframe widget will automatically appear on your website</li>
-                    <li>No additional configuration required - everything is handled securely</li>
+                    <li>The widget will automatically initialize and appear on your website</li>
+                    <li>All configuration is handled through data attributes - no complex setup required</li>
                     <li>Test the widget to ensure it's working correctly</li>
                   </ol>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-900 mb-2">🔒 Security & API Features</h4>
+                  <h4 className="font-semibold text-green-900 mb-2">🔒 Security & Integration</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm text-green-800">
-                    <li>API key for secure widget authentication and configuration</li>
-                    <li>Iframe sandboxing with restricted permissions</li>
-                    <li>Cross-origin isolation and domain validation</li>
-                    <li>Secure communication via postMessage API</li>
-                    <li>No sensitive backend API keys exposed to client</li>
-                    <li>Widget-specific API key for tracking and analytics</li>
-                    <li>Error handling with console logging for debugging</li>
+                    <li>Secure backend integration with OpenAI GPT-4</li>
+                    <li>No API keys or sensitive data exposed to frontend</li>
+                    <li>CORS-enabled for universal website embedding</li>
+                    <li>Data attributes provide clean configuration</li>
+                    <li>Session-based conversation tracking</li>
+                    <li>Intelligent fallback responses when needed</li>
+                    <li>Real-time sentiment analysis and analytics</li>
                   </ul>
-                </div>
-
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-purple-900 mb-2">🧪 Direct Widget URL & API Key</h4>
-                  <p className="text-sm text-purple-800 mb-2">
-                    For testing or advanced integration, use this direct URL:
-                  </p>
-                  <div className="bg-white p-2 rounded border text-sm font-mono text-purple-900 break-all mb-3">
-                    {`${window.location.origin}/widget/${chatbotId}?${new URLSearchParams({
-                      primaryColor: config.primaryColor,
-                      position: config.position,
-                      size: config.size,
-                      welcomeMessage: config.welcomeMessage,
-                      placeholder: config.placeholder,
-                      showBranding: config.showBranding.toString(),
-                      borderRadius: config.borderRadius.toString(),
-                      fontFamily: config.fontFamily,
-                      animation: config.animation,
-                      apiKey: generateApiKey()
-                    }).toString()}`}
-                  </div>
-                  <div className="bg-purple-100 p-2 rounded border">
-                    <p className="text-xs text-purple-800 mb-1">
-                      <strong>Generated API Key:</strong>
-                    </p>
-                    <code className="text-xs text-purple-900 font-mono">
-                      {generateApiKey()}
-                    </code>
-                    <p className="text-xs text-purple-700 mt-1">
-                      This API key is used for widget authentication and configuration tracking.
-                    </p>
-                  </div>
                 </div>
               </div>
             )}

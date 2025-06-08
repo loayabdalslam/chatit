@@ -3,334 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Widget Testing Page</title>
+    <title>ChatIt Widget Test</title>
     <style>
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background: #f5f7fa;
-            line-height: 1.6;
+            background: #f0f2f5;
         }
-        .container {
-            max-width: 1200px;
+        .content {
+            max-width: 800px;
             margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .header {
+        h1 {
+            color: #333;
             text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .test-section {
-            background: white;
+        p {
+            line-height: 1.6;
+            color: #666;
+        }
+        .test-buttons {
             margin: 20px 0;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
         }
-        .test-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .test-item {
-            border: 2px dashed #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            position: relative;
-            min-height: 150px;
-        }
-        .test-item h4 {
-            margin: 0 0 10px 0;
-            color: #2563eb;
-        }
-        .test-item p {
-            margin: 5px 0;
-            font-size: 0.9em;
-            color: #6b7280;
-        }
-        .test-item iframe {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 380px;
-            height: 520px;
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        .url-display {
-            background: #f8fafc;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.8em;
-            word-break: break-all;
-            margin: 10px 0;
-            border-left: 4px solid #2563eb;
-        }
-        .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: 600;
-        }
-        .status.loading {
-            background: #fef3c7;
-            color: #d97706;
-        }
-        .status.ready {
-            background: #d1fae5;
-            color: #059669;
-        }
-        .status.error {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-        .controls {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 8px;
-        }
-        .controls button {
-            background: #2563eb;
+        .test-btn {
+            background: #3b82f6;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 10px 20px;
+            border-radius: 5px;
             margin: 5px;
             cursor: pointer;
-            font-size: 0.9em;
         }
-        .controls button:hover {
-            background: #1d4ed8;
-        }
-        .log {
-            background: #1f2937;
-            color: #f9fafb;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 0.8em;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 20px;
+        .test-btn:hover {
+            background: #2563eb;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Chatbot Widget Testing Suite</h1>
-            <p>Test different widget configurations and verify functionality</p>
-            <div class="status loading" id="serverStatus">⏳ Checking servers...</div>
+    <div class="content">
+        <h1>ChatIt Widget Test Page</h1>
+        <p>This is a test page to verify the ChatIt widget works properly across all viewports and device sizes.</p>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testWidget()">Test Widget</button>
+            <button class="test-btn" onclick="openWidget()">Open Widget</button>
+            <button class="test-btn" onclick="closeWidget()">Close Widget</button>
+            <button class="test-btn" onclick="checkViewport()">Check Viewport</button>
+            <button class="test-btn" onclick="testPositioning()">Test Positioning</button>
         </div>
-
-        <div class="test-section">
-            <h2>📋 Test Information</h2>
-            <p><strong>Test Chatbot ID:</strong> <code>k5750jnw9kbma8fncjj6ymy0697hbpvt</code></p>
-            <p><strong>Base URL:</strong> <code id="baseUrl">http://localhost:5173</code></p>
-            
-            <div class="controls">
-                <button onclick="testApiConnection()">🔌 Test API Connection</button>
-                <button onclick="reloadAllWidgets()">🔄 Reload All Widgets</button>
-                <button onclick="clearLogs()">🧹 Clear Logs</button>
-                <button onclick="toggleWidgets()">👁️ Toggle Widget Visibility</button>
-            </div>
-        </div>
-
-        <div class="test-section">
-            <h2>🎨 Widget Test Configurations</h2>
-            <div class="test-grid">
-                <!-- Basic Widget -->
-                <div class="test-item">
-                    <h4>1. Basic Widget</h4>
-                    <p>Default settings with minimal configuration</p>
-                    <div class="url-display" id="url1"></div>
-                    <iframe id="widget1" src="" style="display: none;"></iframe>
-                </div>
-
-                <!-- Custom Colors -->
-                <div class="test-item">
-                    <h4>2. Custom Colors & Position</h4>
-                    <p>Orange theme, left position, large size</p>
-                    <div class="url-display" id="url2"></div>
-                    <iframe id="widget2" src="" style="display: none;"></iframe>
-                </div>
-
-                <!-- Custom Messages -->
-                <div class="test-item">
-                    <h4>3. Custom Messages</h4>
-                    <p>Personalized welcome message and placeholder</p>
-                    <div class="url-display" id="url3"></div>
-                    <iframe id="widget3" src="" style="display: none;"></iframe>
-                </div>
-
-                <!-- No Branding -->
-                <div class="test-item">
-                    <h4>4. No Branding</h4>
-                    <p>Hidden branding with custom animations</p>
-                    <div class="url-display" id="url4"></div>
-                    <iframe id="widget4" src="" style="display: none;"></iframe>
-                </div>
-            </div>
-        </div>
-
-        <div class="test-section">
-            <h2>📊 Event Log</h2>
-            <div class="log" id="eventLog">
-                Waiting for widget events...<br>
-            </div>
-        </div>
+        
+        <p>Try resizing your browser window to test responsiveness. The widget should work properly on:</p>
+        <ul>
+            <li>Desktop (1200px+)</li>
+            <li>Tablet (768px - 1199px)</li>
+            <li>Mobile (< 768px)</li>
+        </ul>
+        
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
     </div>
 
+    <!-- ChatIt Widget -->
+    <div data-chatit-widget="test-chatbot-123" 
+         data-primarycolor="#3b82f6" 
+         data-position="bottom-right"
+         data-welcomemessage="Hello! How can I help you today?"
+         data-placeholder="Type your message here...">
+    </div>
+
+    <script src="public/widget.js"></script>
+    
     <script>
-        const CHATBOT_ID = 'k5750jnw9kbma8fncjj6ymy0697hbpvt';
-        const BASE_URL = window.location.origin;
-        let widgetsVisible = false;
-
-        // Update base URL display
-        document.getElementById('baseUrl').textContent = BASE_URL;
-
-        // Widget configurations
-        const widgetConfigs = [
-            {
-                id: 'widget1',
-                urlId: 'url1',
-                params: {}
-            },
-            {
-                id: 'widget2',
-                urlId: 'url2',
-                params: {
-                    primaryColor: '%23ff6b35',
-                    position: 'bottom-left',
-                    size: 'large',
-                    animation: 'pulse'
-                }
-            },
-            {
-                id: 'widget3',
-                urlId: 'url3',
-                params: {
-                    primaryColor: '%23059669',
-                    welcomeMessage: 'Hello%21%20I%27m%20here%20to%20help%20you%20today%21',
-                    placeholder: 'Ask%20me%20anything...',
-                    borderRadius: '20',
-                    fontFamily: 'Arial'
-                }
-            },
-            {
-                id: 'widget4',
-                urlId: 'url4',
-                params: {
-                    primaryColor: '%23dc2626',
-                    showBranding: 'false',
-                    animation: 'shake',
-                    size: 'small',
-                    position: 'top-right'
-                }
-            }
-        ];
-
-        // Initialize widgets
-        function initializeWidgets() {
-            widgetConfigs.forEach(config => {
-                const paramString = Object.entries(config.params)
-                    .map(([key, value]) => `${key}=${value}`)
-                    .join('&');
-                
-                const url = `${BASE_URL}/${CHATBOT_ID}${paramString ? '?' + paramString : ''}`;
-                
-                document.getElementById(config.urlId).textContent = url;
-                document.getElementById(config.id).src = url;
-            });
-        }
-
-        // Test API connection
-        async function testApiConnection() {
-            logEvent('🔌 Testing API connection...');
-            
-            try {
-                const response = await fetch(`${BASE_URL}/api/chatbot/${CHATBOT_ID}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    logEvent('✅ API connected successfully');
-                    logEvent(`📊 Chatbot: ${data.name || 'Unknown'}`);
-                    updateServerStatus('ready', '✅ Servers Ready');
-                } else {
-                    logEvent(`❌ API Error: ${response.status} ${response.statusText}`);
-                    updateServerStatus('error', '❌ API Error');
-                }
-            } catch (error) {
-                logEvent(`❌ Connection failed: ${error.message}`);
-                updateServerStatus('error', '❌ Connection Failed');
-            }
-        }
-
-        // Reload all widgets
-        function reloadAllWidgets() {
-            logEvent('🔄 Reloading all widgets...');
-            widgetConfigs.forEach(config => {
-                const iframe = document.getElementById(config.id);
-                const src = iframe.src;
-                iframe.src = '';
-                setTimeout(() => iframe.src = src, 100);
-            });
-        }
-
-        // Toggle widget visibility
-        function toggleWidgets() {
-            widgetsVisible = !widgetsVisible;
-            widgetConfigs.forEach(config => {
-                const iframe = document.getElementById(config.id);
-                iframe.style.display = widgetsVisible ? 'block' : 'none';
-            });
-            logEvent(`👁️ Widgets ${widgetsVisible ? 'shown' : 'hidden'}`);
-        }
-
-        // Clear logs
-        function clearLogs() {
-            document.getElementById('eventLog').innerHTML = 'Event log cleared...<br>';
-        }
-
-        // Log events
-        function logEvent(message) {
-            const log = document.getElementById('eventLog');
-            const timestamp = new Date().toLocaleTimeString();
-            log.innerHTML += `[${timestamp}] ${message}<br>`;
-            log.scrollTop = log.scrollHeight;
-        }
-
-        // Update server status
-        function updateServerStatus(status, text) {
-            const statusEl = document.getElementById('serverStatus');
-            statusEl.className = `status ${status}`;
-            statusEl.textContent = text;
-        }
-
-        // Listen for widget messages
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'CHATBOT_WIDGET_READY') {
-                logEvent(`🤖 Widget ready: ${event.data.chatbotId}`);
-            } else if (event.data.type === 'CHATBOT_WIDGET_RESIZE') {
-                logEvent(`📏 Widget resized: ${event.data.width}x${event.data.height}`);
+        // Test functions
+        function testWidget() {
+            console.log('Testing widget functionality...');
+            if (window.ChatItWidget) {
+                console.log('✅ Widget loaded successfully');
             } else {
-                logEvent(`📨 Widget message: ${JSON.stringify(event.data)}`);
+                console.log('❌ Widget failed to load');
             }
-        });
+        }
+        
+        function openWidget() {
+            const widget = document.querySelector('[data-chatit-widget]').chatItWidget;
+            if (widget) {
+                widget.open();
+            }
+        }
+        
+        function closeWidget() {
+            const widget = document.querySelector('[data-chatit-widget]').chatItWidget;
+            if (widget) {
+                widget.close();
+            }
+        }
+        
+        function checkViewport() {
+            const viewport = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+            
+            let deviceType = 'Desktop';
+            if (viewport.width <= 480) deviceType = 'Mobile';
+            else if (viewport.width <= 768) deviceType = 'Tablet';
+            
+            alert(`Viewport: ${viewport.width}x${viewport.height}\nDevice Type: ${deviceType}\n\nResize window to test different sizes.\nWidget should always stay within screen bounds.`);
+        }
+        
+        function testPositioning() {
+            const widget = document.querySelector('[data-chatit-widget]').chatItWidget;
+            if (widget && widget.ui) {
+                widget.ui.adjustPosition();
+                widget.open();
+                alert('Widget position adjusted! Check if it stays within screen boundaries.');
+            } else {
+                alert('Widget not found or not ready.');
+            }
+        }
 
-        // Initialize on load
-        window.addEventListener('load', () => {
-            initializeWidgets();
-            testApiConnection();
-            logEvent('🚀 Test suite initialized');
+        // Listen for widget ready event
+        window.addEventListener('chatit-widget-ready', (event) => {
+            console.log('✅ Widget ready:', event.detail);
+        });
+        
+        // Test responsive behavior on window resize
+        window.addEventListener('resize', () => {
+            console.log(`Viewport resized to: ${window.innerWidth}x${window.innerHeight}`);
         });
     </script>
 </body>

@@ -123,33 +123,15 @@ http.route({
         });
       }
       
-      // Get or create conversation for this session
-      let conversation = await ctx.runQuery(internal.conversations.getBySessionInternal, {
+      // Handle complete chat message flow with OpenAI integration
+      const response = await ctx.runAction(internal.chat.handleChatMessage, {
+        chatbotId: chatbotId as any,
+        message,
         sessionId
       });
       
-      if (!conversation) {
-        const newConversationId = await ctx.runMutation(internal.conversations.createWidgetInternal, {
-          chatbotId: chatbotId as any,
-          sessionId
-        });
-        conversation = await ctx.runQuery(internal.conversations.getBySessionInternal, {
-          sessionId
-        });
-      }
-      
-      if (!conversation) {
-        throw new Error("Failed to create conversation");
-      }
-      
-      // Send message and get response
-      const response = await ctx.runMutation(internal.conversations.sendMessageInternal, {
-        conversationId: conversation._id,
-        content: message
-      });
-      
       return new Response(JSON.stringify({ 
-        response: response || "Thank you for your message! This is a demo response." 
+        response: response
       }), {
         headers: getCorsHeaders(),
       });
