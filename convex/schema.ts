@@ -146,13 +146,12 @@ const applicationTables = {
     referredUserId: v.id("users"),
     status: v.string(), // "pending", "completed", "paid"
     commission: v.number(), // 20% of subscription price
-    subscriptionId: v.id("subscriptions"),
+    subscriptionId: v.optional(v.id("subscriptions")), // Optional until subscription is created
     paidAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_referrer", ["referrerId"])
-    .index("by_referred_user", ["referredUserId"])
-    .index("by_subscription", ["subscriptionId"]),
+    .index("by_referred_user", ["referredUserId"]),
 
   commissions: defineTable({
     referralId: v.id("referrals"),

@@ -80,13 +80,12 @@ export const processReferral = mutation({
       throw new Error("User has already been referred");
     }
 
-    // Create referral record
+    // Create referral record (without subscription ID initially)
     await ctx.db.insert("referrals", {
       referrerId: referrer._id,
       referredUserId: userId,
       status: "pending",
       commission: 0, // Will be updated when subscription is created
-      subscriptionId: "" as any, // Will be updated when subscription is created
       createdAt: Date.now(),
     });
 
@@ -168,6 +167,7 @@ export const getReferralStats = query({
 export const awardReferralCommission = mutation({
   args: {
     userId: v.id("users"),
+    subscriptionId: v.id("subscriptions"),
     subscriptionAmount: v.number(),
   },
   returns: v.null(),
@@ -186,10 +186,11 @@ export const awardReferralCommission = mutation({
     const commissionRate = 0.2; // 20%
     const commission = args.subscriptionAmount * commissionRate;
 
-    // Update referral record
+    // Update referral record with subscription and commission details
     await ctx.db.patch(referral._id, {
       status: "completed",
       commission: commission,
+      subscriptionId: args.subscriptionId,
       paidAt: Date.now(),
     });
 
@@ -276,6 +277,52 @@ export const validateReferralCode = query({
       valid: true,
       referrerName: referrer.name,
       referrerEmail: referrer.email,
+    };
+  },
+});
+
+// Test function to debug referral system
+export const testReferralSystem = query({
+  args: {},
+  returns: v.object({
+    allUsers: v.array(v.object({
+      _id: v.id("users"),
+      name: v.optional(v.string()),
+      email: v.optional(v.string()),
+      referralCode: v.optional(v.string()),
+    })),
+    allReferrals: v.array(v.object({
+      _id: v.id("referrals"),
+      referrerId: v.id("users"),
+      referredUserId: v.id("users"),
+      status: v.string(),
+      commission: v.number(),
+      createdAt: v.number(),
+    })),
+  }),
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    const referrals = await ctx.db.query("referrals").collect();
+    
+    const simplifiedUsers = users.map(user => ({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      referralCode: user.referralCode,
+    }));
+    
+    const simplifiedReferrals = referrals.map(referral => ({
+      _id: referral._id,
+      referrerId: referral.referrerId,
+      referredUserId: referral.referredUserId,
+      status: referral.status,
+      commission: referral.commission,
+      createdAt: referral.createdAt,
+    }));
+    
+    return {
+      allUsers: simplifiedUsers,
+      allReferrals: simplifiedReferrals,
     };
   },
 }); 

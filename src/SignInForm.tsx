@@ -1,6 +1,6 @@
 "use client";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
@@ -15,7 +15,20 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   
-  const processSignupReferral = useMutation(api.auth.processSignupReferral);
+  const processSignupReferral = useMutation(api.referrals.processReferral);
+
+  // Extract referral code from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode && refCode.trim()) {
+      setReferralCode(refCode.trim().toUpperCase());
+      // Switch to sign up mode if a referral code is present
+      setFlow("signUp");
+      // Show a message to let user know referral code was detected
+      toast.info(`Referral code "${refCode.toUpperCase()}" detected! Create your account to complete the referral.`);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,16 +54,28 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
         if (flow === "signUp" && referralCode.trim()) {
           try {
             await processSignupReferral({ referralCode: referralCode.trim() });
-            toast.success("Account created successfully! Referral processed.");
-          } catch (referralError) {
+            toast.success("Account created successfully! Referral processed - your friend will earn commissions from your subscriptions.");
+          } catch (referralError: any) {
             console.error("Referral processing error:", referralError);
             // Don't fail the signup if referral processing fails
             toast.success("Account created successfully!");
-            toast.warning("Note: There was an issue processing your referral code.");
+            if (referralError.message?.includes("Invalid referral code")) {
+              toast.error("Invalid referral code - but your account was created successfully.");
+            } else if (referralError.message?.includes("already been referred")) {
+              toast.warning("You've already been referred by someone else.");
+            } else {
+              toast.warning("Note: There was an issue processing your referral code.");
+            }
           }
         } else {
           toast.success(flow === "signIn" ? "Welcome back!" : "Account created successfully!");
         }
+        
+        // Clear URL parameters after successful signup
+        if (flow === "signUp" && referralCode.trim()) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
         onSuccess?.();
       }
     } catch (error: any) {
@@ -87,7 +112,9 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
           <p className="mt-2 text-gray-600">
             {flow === "signIn" 
               ? "Sign in to your ChatIt account" 
-              : "Join thousands of businesses using ChatIt"
+              : referralCode 
+                ? "Complete your referral signup to ChatIt" 
+                : "Join thousands of businesses using ChatIt"
             }
           </p>
         </div>
@@ -134,6 +161,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
               <div>
                 <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-2">
                   Referral Code <span className="text-gray-500">(Optional)</span>
+                  {referralCode && <span className="text-green-600 ml-2">✓ Code detected from link</span>}
                 </label>
                 <input
                   id="referralCode"
@@ -145,7 +173,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                   placeholder="Enter referral code"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Have a referral code? Your friend will earn 20% commission!
+                  Have a referral code? Your referrer will earn 20% commission from your subscriptions!
                 </p>
               </div>
             )}
@@ -178,7 +206,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                 className="text-sm font-medium text-black hover:underline"
                 onClick={() => {
                   setFlow(flow === "signIn" ? "signUp" : "signIn");
-                  setReferralCode("");
+                  // Don't clear referral code when switching flows
                 }}
               >
                 {flow === "signIn" ? "Sign up here" : "Sign in instead"}
