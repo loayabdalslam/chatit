@@ -2,7 +2,31 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-// Generate a unique referral code for a user
+// Helper function to generate unique referral code
+const generateUniqueCode = async (ctx: any) => {
+  let code = "";
+  let attempts = 0;
+  
+  do {
+    code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_referral_code", (q: any) => q.eq("referralCode", code))
+      .first();
+    
+    if (!existing) break;
+    attempts++;
+  } while (attempts < 10);
+
+  if (attempts >= 10) {
+    throw new Error("Could not generate unique referral code");
+  }
+
+  return code;
+};
+
+// Generate a unique referral code for a user (simplified version)
 export const generateReferralCode = mutation({
   args: {},
   returns: v.string(),
@@ -14,32 +38,62 @@ export const generateReferralCode = mutation({
 
     // Check if user already has a referral code
     const user = await ctx.db.get(userId);
+    
     if (user?.referralCode) {
       return user.referralCode;
     }
 
-    // Generate a unique 8-character code
-    let code = "";
-    let attempts = 0;
-    do {
-      code = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const existing = await ctx.db
-        .query("users")
-        .withIndex("by_referral_code", (q) => q.eq("referralCode", code))
-        .first();
-      
-      if (!existing) break;
-      attempts++;
-    } while (attempts < 10);
-
-    if (attempts >= 10) {
-      throw new Error("Could not generate unique referral code");
-    }
+    // Generate a unique code
+    const code = await generateUniqueCode(ctx);
 
     // Update user with referral code
     await ctx.db.patch(userId, { referralCode: code });
     
     return code;
+  },
+});
+
+// Backfill referral codes for existing users
+export const backfillReferralCodes = mutation({
+  args: {},
+  returns: v.object({
+    processed: v.number(),
+    updated: v.number(),
+  }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get all users without referral codes
+    const usersWithoutCodes = await ctx.db
+      .query("users")
+      .filter((q: any) => 
+        q.or(
+          q.eq(q.field("referralCode"), undefined),
+          q.eq(q.field("referralCode"), null)
+        )
+      )
+      .collect();
+
+    let updated = 0;
+    
+    for (const user of usersWithoutCodes) {
+      try {
+        const code = await generateUniqueCode(ctx);
+        await ctx.db.patch(user._id, { referralCode: code });
+        updated++;
+        console.log(`Generated referral code ${code} for existing user ${user._id}`);
+      } catch (error) {
+        console.error(`Failed to generate code for user ${user._id}:`, error);
+      }
+    }
+
+    return {
+      processed: usersWithoutCodes.length,
+      updated,
+    };
   },
 });
 
@@ -60,7 +114,7 @@ export const processReferral = mutation({
     // Find the referrer by referral code
     const referrer = await ctx.db
       .query("users")
-      .withIndex("by_referral_code", (q) => q.eq("referralCode", args.referralCode))
+      .withIndex("by_referral_code", (q: any) => q.eq("referralCode", args.referralCode))
       .first();
 
     console.log("Found referrer:", referrer ? referrer._id : "Not found");
@@ -77,7 +131,7 @@ export const processReferral = mutation({
     // Check if this user was already referred
     const existingReferral = await ctx.db
       .query("referrals")
-      .withIndex("by_referred_user", (q) => q.eq("referredUserId", userId))
+      .withIndex("by_referred_user", (q: any) => q.eq("referredUserId", userId))
       .first();
 
     console.log("Existing referral:", existingReferral ? "Found" : "None");
@@ -327,5 +381,77 @@ export const getAllReferrals = query({
     );
     
     return enrichedReferrals;
+  },
+});
+
+// Test function to verify referral system works
+export const testReferralFlow = mutation({
+  args: {},
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    referralCode: v.optional(v.string()),
+    userId: v.optional(v.id("users")),
+  }),
+  handler: async (ctx) => {
+    try {
+      const userId = await getAuthUserId(ctx);
+      if (!userId) {
+        return {
+          success: false,
+          message: "Not authenticated",
+        };
+      }
+
+      // Get current user
+      const user = await ctx.db.get(userId);
+      if (!user) {
+        return {
+          success: false,
+          message: "User not found",
+        };
+      }
+
+      // Generate referral code if doesn't exist
+      let referralCode = user.referralCode;
+      if (!referralCode) {
+        // Generate a unique 8-character code
+        let code = "";
+        let attempts = 0;
+        do {
+          code = Math.random().toString(36).substring(2, 10).toUpperCase();
+          const existing = await ctx.db
+            .query("users")
+            .withIndex("by_referral_code", (q) => q.eq("referralCode", code))
+            .first();
+          
+          if (!existing) break;
+          attempts++;
+        } while (attempts < 10);
+
+        if (attempts >= 10) {
+          return {
+            success: false,
+            message: "Could not generate unique referral code",
+          };
+        }
+
+        // Update user with referral code
+        await ctx.db.patch(userId, { referralCode: code });
+        referralCode = code;
+      }
+
+      return {
+        success: true,
+        message: `Referral code generated successfully: ${referralCode}`,
+        referralCode,
+        userId,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: `Error: ${error.message}`,
+      };
+    }
   },
 }); 
