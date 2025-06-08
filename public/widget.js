@@ -1,10 +1,21 @@
-// ChatIt Widget - Intelligent AI Chat Widget
+// ChatIt Widget - Direct Convex Integration with Real AI
 (function() {
   'use strict';
 
-  // Configuration
+  // Auto-detect Convex deployment URL
+  const getConvexUrl = () => {
+    // Check if we're in development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:3000'; // Local Convex dev server
+    }
+    
+    // Production - Use environment variable or default
+    return window.CONVEX_URL || 'https://chatit.cloud';
+  };
+
+  // Configuration with dynamic Convex URL
   const CONFIG = {
-    apiUrl: 'https://chatit.cloud',
+    convexUrl: getConvexUrl(),
     defaults: {
       primaryColor: '#3b82f6',
       position: 'bottom-right',
@@ -55,10 +66,11 @@
       return widgetId || null;
     },
 
-    // Create CORS-enabled request headers
+    // Create CORS-enabled request headers for Convex
     getCorsHeaders: () => ({
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Convex-Client': 'widget-js-v1.0',
     }),
 
     // Check if device is mobile
@@ -108,16 +120,44 @@
     }
   };
 
-  // API Manager for Convex integration
-  class APIManager {
-    constructor({ apiUrl, chatbotId }) {
-      this.apiUrl = apiUrl || CONFIG.apiUrl;
+  // Direct Convex API Manager - Real AI Integration
+  class ConvexAPIManager {
+    constructor({ convexUrl, chatbotId }) {
+      this.convexUrl = convexUrl || CONFIG.convexUrl;
       this.chatbotId = chatbotId;
       this.sessionId = utils.generateSessionId();
+      this.connected = false;
+      this.initConnection();
     }
 
-    async request({ endpoint, method = 'GET', data = null }) {
-      const url = `${this.apiUrl}${endpoint}`;
+    async initConnection() {
+      try {
+        // Test connection to Convex
+        await this.testConnection();
+        this.connected = true;
+        console.log('✅ Connected to Convex backend');
+      } catch (error) {
+        console.warn('⚠️ Convex connection failed, will retry:', error.message);
+        this.connected = false;
+      }
+    }
+
+    async testConnection() {
+      const response = await fetch(`${this.convexUrl}/api/health`, {
+        method: 'GET',
+        headers: utils.getCorsHeaders(),
+        mode: 'cors',
+        credentials: 'omit',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Connection test failed: ${response.status}`);
+      }
+    }
+
+    async makeConvexRequest({ endpoint, method = 'POST', data = null }) {
+      const url = `${this.convexUrl}${endpoint}`;
+      
       const options = {
         method,
         headers: utils.getCorsHeaders(),
@@ -132,7 +172,8 @@
       const response = await fetch(url, options);
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Convex API Error ${response.status}: ${errorText}`);
       }
 
       const contentType = response.headers.get('content-type');
@@ -144,34 +185,81 @@
     }
 
     async getChatbotInfo() {
-      return await this.request({
-        endpoint: `/api/chatbot/${this.chatbotId}`,
-        method: 'GET'
-      });
+      try {
+        console.log(`📡 Fetching chatbot info for: ${this.chatbotId}`);
+        
+        const response = await this.makeConvexRequest({
+          endpoint: `/api/chatbot/${this.chatbotId}`,
+          method: 'GET'
+        });
+
+        console.log('✅ Chatbot info received:', response);
+        return response;
+        
+      } catch (error) {
+        console.error('❌ Failed to get chatbot info:', error);
+        // Return minimal fallback config - no fake responses
+        return {
+          name: 'AI Assistant',
+          description: 'AI-powered assistant',
+          widgetConfig: {
+            primaryColor: '#3b82f6',
+            position: 'bottom-right',
+            welcomeMessage: 'Hi! How can I help you today?',
+            placeholder: 'Type your message...',
+            showBranding: true
+          }
+        };
+      }
     }
 
     async sendMessage({ message }) {
       try {
-        const response = await this.request({
+        console.log(`💬 Sending message to Convex: "${message}"`);
+        
+        const response = await this.makeConvexRequest({
           endpoint: '/api/chat',
           method: 'POST',
           data: { 
             chatbotId: this.chatbotId, 
-            message, 
+            message: message.trim(), 
             sessionId: this.sessionId 
           }
         });
-        
+
+        console.log('✅ AI response received:', response);
+
         if (response && response.message) {
-          return { message: response.message, success: true };
+          return { 
+            message: response.message, 
+            success: true,
+            source: 'convex'
+          };
         } else if (typeof response === 'string') {
-          return { message: response, success: true };
+          return { 
+            message: response, 
+            success: true,
+            source: 'convex'
+          };
         }
         
-        throw new Error('Invalid response format');
+        throw new Error('Invalid response format from Convex');
+        
       } catch (error) {
-        console.error('Failed to send message:', error);
-        throw error; // Re-throw to handle in the calling code
+        console.error('❌ Convex chat error:', error);
+        
+        // For real AI chatbot - show connection error, no fake responses
+        throw new Error(`Connection failed: ${error.message}`);
+      }
+    }
+
+    // Health check method
+    async isHealthy() {
+      try {
+        await this.testConnection();
+        return true;
+      } catch {
+        return false;
       }
     }
   }
@@ -612,13 +700,53 @@
         }
 
         .chatit-error {
-          color: #ef4444;
           background: #fef2f2;
           border: 1px solid #fecaca;
-          padding: 12px 16px;
           border-radius: 8px;
           margin: 10px 0;
           font-size: 13px;
+          overflow: hidden;
+        }
+
+        .chatit-error-content {
+          color: #ef4444;
+          padding: 12px 16px;
+        }
+
+        .chatit-retry-btn {
+          width: 100%;
+          background: #ef4444;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          cursor: pointer;
+          font-size: 12px;
+          transition: background-color 0.2s;
+        }
+
+        .chatit-retry-btn:hover {
+          background: #dc2626;
+        }
+
+        .chatit-connection-status {
+          background: #fef3c7;
+          border: 1px solid #fbbf24;
+          border-radius: 6px;
+          padding: 8px 12px;
+          margin: 8px 0;
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #92400e;
+        }
+
+        .chatit-connection-status.offline {
+          animation: pulse 2s infinite;
+        }
+
+        .status-icon {
+          font-size: 14px;
         }
 
         .chatit-status {
@@ -972,13 +1100,55 @@
       this.updateSendButton();
     }
 
-    showError(message) {
+    showError(message, showRetry = true) {
       const messagesContainer = this.container.querySelector('.chatit-messages');
       const errorEl = document.createElement('div');
       errorEl.className = 'chatit-error';
-      errorEl.textContent = message;
+      
+      const errorContent = document.createElement('div');
+      errorContent.className = 'chatit-error-content';
+      errorContent.textContent = message;
+      
+      errorEl.appendChild(errorContent);
+      
+      if (showRetry) {
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'chatit-retry-btn';
+        retryBtn.textContent = 'Try Again';
+        retryBtn.onclick = () => {
+          errorEl.remove();
+          // Trigger reconnection attempt
+          if (this.onRetry) {
+            this.onRetry();
+          }
+        };
+        errorEl.appendChild(retryBtn);
+      }
+      
       messagesContainer.appendChild(errorEl);
       this.scrollToBottom();
+      
+      return errorEl;
+    }
+
+    showConnectionStatus(isConnected) {
+      // Remove existing status
+      const existingStatus = this.container.querySelector('.chatit-connection-status');
+      if (existingStatus) {
+        existingStatus.remove();
+      }
+      
+      if (!isConnected) {
+        const messagesContainer = this.container.querySelector('.chatit-messages');
+        const statusEl = document.createElement('div');
+        statusEl.className = 'chatit-connection-status offline';
+        statusEl.innerHTML = `
+          <span class="status-icon">⚠️</span>
+          <span>Connection lost. Trying to reconnect...</span>
+        `;
+        messagesContainer.appendChild(statusEl);
+        this.scrollToBottom();
+      }
     }
 
     scrollToBottom() {
@@ -1002,20 +1172,28 @@
     }
   }
 
-  // Main ChatIt Widget Class
+  // Main ChatIt Widget Class - Real AI Integration
   class ChatItWidget {
-    constructor({ chatbotId, apiUrl, ...customConfig }) {
+    constructor({ chatbotId, convexUrl, ...customConfig }) {
       if (!chatbotId) {
-        console.error('ChatItWidget: chatbotId is required');
+        console.error('❌ ChatItWidget: chatbotId is required');
         return;
       }
 
+      console.log(`🚀 Initializing ChatIt Widget for chatbot: ${chatbotId}`);
+      
       this.config = { ...CONFIG.defaults, ...customConfig, chatbotId };
-      this.api = new APIManager({ apiUrl: apiUrl || CONFIG.apiUrl, chatbotId });
+      this.api = new ConvexAPIManager({ 
+        convexUrl: convexUrl || CONFIG.convexUrl, 
+        chatbotId 
+      });
       this.messages = new MessageManager(this.api.sessionId);
       this.ui = new UIManager({ config: this.config });
       
       this.isReady = false;
+      this.connectionRetryCount = 0;
+      this.maxRetries = 3;
+      
       this.init();
     }
 
@@ -1093,29 +1271,94 @@
       this.ui.showTyping();
 
       try {
-        // Send message to API
+        // Check connection health first
+        const isHealthy = await this.api.isHealthy();
+        if (!isHealthy) {
+          throw new Error('Connection to AI service is not available');
+        }
+
+        // Send message to Convex for real AI response
         const response = await this.api.sendMessage({ message: messageText });
         
         // Hide typing indicator
         this.ui.hideTyping();
         
         if (response && response.message) {
-          // Add AI response to UI
+          // Add real AI response to UI
           const botMessage = this.messages.add({
             content: response.message,
             sender: 'bot'
           });
           this.ui.showMessage(botMessage);
+          
+          // Reset retry count on success
+          this.connectionRetryCount = 0;
+          
+          // Dispatch success event
+          window.dispatchEvent(new CustomEvent('chatit-message-sent', {
+            detail: { 
+              chatbotId: this.config.chatbotId,
+              message: messageText,
+              response: response.message,
+              source: response.source || 'convex'
+            }
+          }));
+          
         } else {
-          throw new Error('No response from AI');
+          throw new Error('Invalid response from AI service');
         }
         
       } catch (error) {
-        console.error('Failed to get AI response:', error);
+        console.error('❌ Failed to get AI response:', error);
         this.ui.hideTyping();
         
-        // Show error message
-        this.ui.showError('Sorry, I\'m having trouble connecting to the server. Please try again later.');
+        // Handle connection errors
+        this.handleConnectionError(error, messageText);
+      }
+    }
+
+    async handleConnectionError(error, originalMessage) {
+      this.connectionRetryCount++;
+      
+      let errorMessage = 'Connection failed. ';
+      let showRetry = true;
+      
+      if (this.connectionRetryCount >= this.maxRetries) {
+        errorMessage += 'Please check your internet connection and try again.';
+        showRetry = false;
+      } else {
+        errorMessage += `Attempting to reconnect... (${this.connectionRetryCount}/${this.maxRetries})`;
+      }
+      
+      // Show error with retry option
+      const errorEl = this.ui.showError(errorMessage, showRetry);
+      
+      // Set up retry functionality
+      this.ui.onRetry = async () => {
+        console.log('🔄 Retrying connection...');
+        
+        // Remove any connection status indicators
+        this.ui.showConnectionStatus(false);
+        
+        // Attempt to reinitialize connection
+        await this.api.initConnection();
+        
+        // Retry the original message
+        if (originalMessage && this.connectionRetryCount < this.maxRetries) {
+          setTimeout(() => {
+            this.sendMessage(originalMessage);
+          }, 1000);
+        }
+      };
+      
+      // Show connection status
+      this.ui.showConnectionStatus(false);
+      
+      // Auto-retry if under limit
+      if (this.connectionRetryCount < this.maxRetries) {
+        setTimeout(() => {
+          this.ui.onRetry();
+        }, 2000);
       }
     }
 
@@ -1174,7 +1417,13 @@
           }
         });
 
-        // Create widget instance
+        // Check for custom Convex URL
+        const customConvexUrl = element.getAttribute('data-convex-url');
+        if (customConvexUrl) {
+          customConfig.convexUrl = customConvexUrl;
+        }
+
+        // Create widget instance with Convex integration
         const widget = new ChatItWidget({
           chatbotId,
           ...customConfig
