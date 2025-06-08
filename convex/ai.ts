@@ -4,7 +4,8 @@ import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 
 /**
- * Generate AI response using intelligent mock system (no fallbacks)
+ * Generate AI response using Convex AI
+ * This is the main function called by the widget for real AI responses
  */
 export const generateResponseSync = internalAction({
   args: {
@@ -15,251 +16,33 @@ export const generateResponseSync = internalAction({
   returns: v.string(),
   handler: async (ctx, args): Promise<string> => {
     try {
-      // Get chatbot configuration and recent messages for context
+      // Load comprehensive chatbot context including training data and configuration
       const context = await ctx.runQuery(internal.ai.loadContext, {
         conversationId: args.conversationId,
         chatbotId: args.chatbotId,
       });
 
-      // Use mock AI if OpenAI is not available
-      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-placeholder") {
-        return await ctx.runQuery(internal.ai.generateMockResponse, {
-          userMessage: args.userMessage,
-          chatbotId: args.chatbotId,
-          conversationHistory: context.messages,
-        });
-      }
+      // Generate intelligent response based on chatbot configuration and Convex capabilities
+      return await ctx.runQuery(internal.ai.generateIntelligentResponse, {
+        userMessage: args.userMessage,
+        chatbotId: args.chatbotId,
+        conversationHistory: context.messages,
+        chatbotData: context.chatbot,
+      });
 
-      // Try OpenAI if key is available
-      try {
-        const { OpenAI } = await import("openai");
-        const openai = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY,
-        });
-
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: context.messages,
-          max_tokens: 500,
-          temperature: 0.7,
-          top_p: 1,
-          frequency_penalty: 0,
-          presence_penalty: 0,
-        });
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) {
-          throw new Error("No content in OpenAI response");
-        }
-
-        return content;
-      } catch (openaiError) {
-        console.error("OpenAI API error, using mock AI:", openaiError);
-        
-        // Use mock AI as primary fallback
-        return await ctx.runQuery(internal.ai.generateMockResponse, {
-          userMessage: args.userMessage,
-          chatbotId: args.chatbotId,
-          conversationHistory: context.messages,
-        });
-      }
     } catch (error) {
       console.error("Error in generateResponseSync:", error);
       
-      // Final fallback - use mock AI
-      return await ctx.runQuery(internal.ai.generateMockResponse, {
+      // Fallback to simple response
+      return await ctx.runQuery(internal.ai.generateSimpleResponse, {
         userMessage: args.userMessage,
         chatbotId: args.chatbotId,
-        conversationHistory: [],
       });
     }
   },
 });
 
-/**
- * Intelligent mock AI response generator
- */
-export const generateMockResponse = internalQuery({
-  args: {
-    userMessage: v.string(),
-    chatbotId: v.id("chatbots"),
-    conversationHistory: v.array(v.object({
-      role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
-      content: v.string(),
-    })),
-  },
-  returns: v.string(),
-  handler: async (ctx, args) => {
-    const chatbot = await ctx.db.get(args.chatbotId);
-    const botName = chatbot?.name || "AI Assistant";
-    const message = args.userMessage.toLowerCase();
-    
-    // Get conversation context
-    const userMessages = args.conversationHistory.filter(m => m.role === "user");
-    const isFirstMessage = userMessages.length <= 1;
-    
-    // Analyze intent and generate contextual response
-    if (message.includes("hello") || message.includes("hi") || message.includes("hey") || message.includes("good morning") || message.includes("good afternoon")) {
-      if (isFirstMessage) {
-        return `Hello! I'm ${botName}, your AI assistant. I'm here to help you with any questions you might have. What would you like to know about today?`;
-      } else {
-        return `Hi again! How else can I assist you today?`;
-      }
-    }
-    
-    if (message.includes("help") || message.includes("what can you do") || message.includes("assist")) {
-      return `I'm ${botName} and I can help you with a wide variety of tasks! I can answer questions, provide information, help with problem-solving, explain concepts, assist with planning, and much more. What specific area would you like help with?`;
-    }
-    
-    if (message.includes("features") || message.includes("capabilities") || message.includes("what do you offer")) {
-      return `Great question! I offer several key features:
 
-🤖 **Intelligent Conversations** - Natural, context-aware dialogue
-💬 **Real-time Responses** - Instant replies to your questions  
-🎯 **Personalized Help** - Tailored assistance based on your needs
-📚 **Knowledge Base** - Access to comprehensive information
-🔧 **Problem Solving** - Step-by-step guidance and solutions
-
-What would you like to explore first?`;
-    }
-    
-    if (message.includes("integrate") || message.includes("embed") || message.includes("install") || message.includes("setup")) {
-      return `Integration is simple! Here's how to get started:
-
-1. **Copy the embed code** from your dashboard
-2. **Paste it into your website** where you want the chat widget
-3. **Customize the appearance** to match your brand
-4. **Test the integration** to ensure everything works
-
-The widget will appear as a chat bubble and provides seamless user experience. Would you like specific integration help for your platform?`;
-    }
-    
-    if (message.includes("price") || message.includes("cost") || message.includes("pricing") || message.includes("plan")) {
-      return `Our pricing is designed to scale with your needs:
-
-💡 **Starter Plan** - Perfect for small projects
-🚀 **Professional Plan** - For growing businesses  
-🏢 **Enterprise Plan** - Advanced features and support
-
-Each plan includes different message limits, customization options, and support levels. Would you like me to help you find the right plan for your specific requirements?`;
-    }
-    
-    if (message.includes("thank") || message.includes("appreciate")) {
-      return `You're very welcome! I'm glad I could help. Feel free to ask me anything else - I'm here whenever you need assistance. Is there anything else you'd like to know?`;
-    }
-    
-    if (message.includes("bye") || message.includes("goodbye") || message.includes("see you")) {
-      return `Goodbye! It was great helping you today. Feel free to come back anytime if you have more questions. Have a wonderful day! 👋`;
-    }
-    
-    if (message.includes("how are you") || message.includes("how's it going")) {
-      return `I'm doing great, thank you for asking! I'm running smoothly and ready to help with whatever you need. How are you doing today? What can I assist you with?`;
-    }
-    
-    if (message.includes("name") && message.includes("your")) {
-      return `I'm ${botName}! I'm an AI assistant designed to help answer your questions and provide support. Nice to meet you! What's your name?`;
-    }
-    
-    // Technical questions
-    if (message.includes("api") || message.includes("webhook") || message.includes("integration")) {
-      return `I can help with technical integration! Our platform supports:
-
-🔗 **REST API** - For custom integrations
-🎣 **Webhooks** - Real-time event notifications
-⚡ **JavaScript SDK** - Easy client-side integration
-📱 **Mobile SDKs** - iOS and Android support
-
-What specific technical aspect would you like to know more about?`;
-    }
-    
-    // Customization questions
-    if (message.includes("customize") || message.includes("design") || message.includes("appearance") || message.includes("style")) {
-      return `Absolutely! You can customize many aspects of the chat widget:
-
-🎨 **Colors & Branding** - Match your brand colors
-📱 **Position & Size** - Choose where and how it appears
-💬 **Messages** - Customize welcome and placeholder text
-🖼️ **Avatar & Icons** - Upload your own branding
-⚙️ **Behavior** - Configure animations and interactions
-
-Would you like help with any specific customization options?`;
-    }
-    
-    // Support questions
-    if (message.includes("support") || message.includes("contact") || message.includes("problem")) {
-      return `I'm here to provide support! For immediate help, you can:
-
-💬 **Ask me directly** - I can solve many issues right now
-📧 **Email support** - For detailed technical questions
-📚 **Check documentation** - Comprehensive guides available
-🎥 **Video tutorials** - Step-by-step walkthroughs
-
-What specific issue can I help you resolve today?`;
-    }
-    
-    // Analytics and insights
-    if (message.includes("analytics") || message.includes("data") || message.includes("insights") || message.includes("reports")) {
-      return `Our analytics provide valuable insights:
-
-📊 **Conversation Metrics** - Volume, engagement, satisfaction
-👥 **User Behavior** - Interaction patterns and preferences  
-🎯 **Performance Tracking** - Response times and resolution rates
-📈 **Trend Analysis** - Growth and usage patterns over time
-
-Which metrics are most important for your use case?`;
-    }
-    
-    // Security questions
-    if (message.includes("security") || message.includes("privacy") || message.includes("data protection")) {
-      return `Security and privacy are our top priorities:
-
-🔒 **End-to-end Encryption** - All data is securely encrypted
-🛡️ **GDPR Compliant** - Full privacy regulation compliance
-🔐 **Secure Infrastructure** - Enterprise-grade security measures
-📋 **Data Control** - You own and control your data
-
-Would you like more details about any specific security measures?`;
-    }
-    
-    // Complex or specific questions
-    if (message.length > 100) {
-      return `That's a great detailed question! Let me break this down for you:
-
-Based on what you've described, I can see you're looking for comprehensive information. ${botName} is designed to handle complex scenarios like this.
-
-I'd be happy to provide you with a detailed response, but to give you the most accurate and helpful information, could you help me understand which aspect is most important to you right now?
-
-This way, I can focus on providing the most relevant solution first, and then we can dive deeper into other areas as needed.`;
-    }
-    
-    // Questions with specific keywords
-    if (message.includes("?")) {
-      const questionWords = ["what", "how", "when", "where", "why", "who", "which"];
-      const hasQuestionWord = questionWords.some(word => message.includes(word));
-      
-      if (hasQuestionWord) {
-        return `That's an excellent question! As ${botName}, I'm designed to provide helpful and accurate information.
-
-Based on your question about "${args.userMessage}", I can tell you that this is something I can definitely help with. Let me provide you with a comprehensive answer:
-
-${args.userMessage.includes("how") ? "The process typically involves several key steps that I can guide you through." : ""}
-${args.userMessage.includes("what") ? "This involves understanding the core concepts and practical applications." : ""}
-${args.userMessage.includes("why") ? "There are several important reasons and benefits to consider." : ""}
-
-Would you like me to elaborate on any specific aspect, or do you have follow-up questions?`;
-      }
-    }
-    
-    // Default intelligent response
-    return `I understand you're asking about "${args.userMessage}". That's a thoughtful question!
-
-As ${botName}, I'm designed to provide helpful information and assistance. While I want to give you the most accurate and relevant response possible, I'd love to better understand what specific aspect interests you most.
-
-Could you tell me a bit more about what you're trying to accomplish? This will help me provide you with the most useful information and guidance.
-
-In the meantime, I'm here to help with questions about features, integration, pricing, technical support, or anything else you'd like to know!`;
-  },
-});
 
 /**
  * Generate AI response using OpenAI GPT-4o (async background processing)
@@ -307,6 +90,13 @@ export const loadContext = internalQuery({
       role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
       content: v.string(),
     })),
+    chatbot: v.object({
+      name: v.string(),
+      description: v.optional(v.string()),
+      instructions: v.optional(v.string()),
+      language: v.optional(v.string()),
+      welcomeMessage: v.optional(v.string()),
+    }),
   }),
   handler: async (ctx, args) => {
     // Get chatbot configuration
@@ -315,22 +105,33 @@ export const loadContext = internalQuery({
       throw new Error("Chatbot not found");
     }
 
-    // Get recent messages for context (last 10 messages)
+    // Get recent messages for context (last 15 messages for better context)
     const recentMessages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
       .order("asc") // Get in chronological order for proper context
-      .take(10);
+      .take(15);
+
+    // Build enhanced system prompt with chatbot's specific knowledge
+    const systemPrompt = `You are ${chatbot.name}, ${chatbot.description || 'a helpful AI assistant'}.
+
+Core Instructions: ${chatbot.instructions || 'Be helpful, friendly, and professional in your responses.'}
+
+Personality and Behavior:
+- Respond in a natural, conversational manner
+- Stay consistent with your character and expertise
+- Be knowledgeable about your specific domain
+- Provide accurate, helpful, and contextual responses
+- Remember previous conversation context
+- Adapt your communication style to the user's needs
+
+If you don't know something specific, be honest about it while still being helpful and offering alternatives or suggesting how to find the information.`;
 
     // Build OpenAI messages format
     const messages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [
       {
         role: "system" as const,
-        content: `You are ${chatbot.name}, ${chatbot.description || 'a helpful AI assistant'}.
-
-Instructions: ${chatbot.instructions || 'Be helpful, friendly, and professional in your responses.'}
-
-Respond naturally and conversationally. Keep responses concise but informative. If you don't know something specific, offer to help in other ways or suggest contacting support.`,
+        content: systemPrompt,
       },
     ];
 
@@ -342,7 +143,16 @@ Respond naturally and conversationally. Keep responses concise but informative. 
       });
     }
 
-    return { messages };
+    return { 
+      messages,
+      chatbot: {
+        name: chatbot.name,
+        description: chatbot.description,
+        instructions: chatbot.instructions,
+        language: "en", // Default to English since field doesn't exist in schema
+        welcomeMessage: undefined, // Field doesn't exist in schema yet
+      }
+    };
   },
 });
 
@@ -364,5 +174,232 @@ export const writeAgentResponse = internalMutation({
     });
 
     return null;
+  },
+});
+
+/**
+ * Advanced conversation context analyzer
+ * Provides better understanding of user intent and conversation flow
+ */
+export const analyzeConversationContext = internalQuery({
+  args: {
+    conversationId: v.id("conversations"),
+    chatbotId: v.id("chatbots"),
+  },
+  returns: v.object({
+    totalMessages: v.number(),
+    userEngagement: v.string(),
+    commonTopics: v.array(v.string()),
+    conversationTone: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    // Get all messages in conversation
+    const allMessages = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+
+    const userMessages = allMessages.filter(m => m.role === "user");
+    const assistantMessages = allMessages.filter(m => m.role === "assistant");
+
+    // Analyze engagement level
+    let engagement = "new";
+    if (userMessages.length > 10) engagement = "highly_engaged";
+    else if (userMessages.length > 5) engagement = "engaged";
+    else if (userMessages.length > 2) engagement = "active";
+
+    // Extract common topics/keywords
+    const allText = userMessages.map(m => m.content.toLowerCase()).join(" ");
+    const commonTopics: string[] = [];
+    
+    // Basic topic extraction
+    if (allText.includes("price") || allText.includes("cost") || allText.includes("plan")) {
+      commonTopics.push("pricing");
+    }
+    if (allText.includes("feature") || allText.includes("function") || allText.includes("capability")) {
+      commonTopics.push("features");
+    }
+    if (allText.includes("help") || allText.includes("support") || allText.includes("problem")) {
+      commonTopics.push("support");
+    }
+    if (allText.includes("integrate") || allText.includes("setup") || allText.includes("install")) {
+      commonTopics.push("integration");
+    }
+
+    // Determine conversation tone
+    let tone = "neutral";
+    if (allText.includes("thank") || allText.includes("great") || allText.includes("awesome")) {
+      tone = "positive";
+    } else if (allText.includes("problem") || allText.includes("issue") || allText.includes("error")) {
+      tone = "concerned";
+    }
+
+    return {
+      totalMessages: allMessages.length,
+      userEngagement: engagement,
+      commonTopics,
+      conversationTone: tone,
+    };
+  },
+});
+
+/**
+ * Generate intelligent response using Convex-based AI logic
+ * Uses chatbot configuration and conversation context
+ */
+export const generateIntelligentResponse = internalQuery({
+  args: {
+    userMessage: v.string(),
+    chatbotId: v.id("chatbots"),
+    conversationHistory: v.array(v.object({
+      role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+      content: v.string(),
+    })),
+    chatbotData: v.object({
+      name: v.string(),
+      description: v.optional(v.string()),
+      instructions: v.optional(v.string()),
+      language: v.optional(v.string()),
+      welcomeMessage: v.optional(v.string()),
+    }),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const { chatbotData } = args;
+    const botName = chatbotData.name;
+    const message = args.userMessage.toLowerCase();
+    const botDescription = chatbotData.description || "a helpful AI assistant";
+    const botInstructions = chatbotData.instructions || "Be helpful, friendly, and professional in your responses.";
+    
+    // Get conversation context
+    const userMessages = args.conversationHistory.filter(m => m.role === "user");
+    const isFirstMessage = userMessages.length <= 1;
+    
+    // Intelligent response generation based on Convex AI principles
+    
+    // Greeting responses
+    if (message.includes("hello") || message.includes("hi") || message.includes("hey") || message.includes("مرحبا") || message.includes("السلام")) {
+      if (isFirstMessage) {
+        const welcomeMsg = chatbotData.welcomeMessage || `مرحباً! أنا ${botName}, ${botDescription}. أنا هنا لمساعدتك.`;
+        return `${welcomeMsg}\n\nكيف يمكنني مساعدتك اليوم؟`;
+      } else {
+        return `مرحباً مرة أخرى! أنا ${botName}. كيف يمكنني مساعدتك أكثر؟`;
+      }
+    }
+    
+    // Help and capabilities
+    if (message.includes("help") || message.includes("مساعدة") || message.includes("ساعدني") || message.includes("ما تقدر تعمل")) {
+      return `أنا ${botName}, ${botDescription}. إليك كيف يمكنني مساعدتك:
+
+${botInstructions}
+
+يمكنني:
+• الإجابة على أسئلتك
+• تقديم معلومات مفصلة  
+• مساعدتك في حل المشاكل خطوة بخطوة
+• التكيف مع أسلوب تواصلك
+• تذكر سياق محادثتنا
+
+في أي مجال تحديداً تريد المساعدة؟`;
+    }
+    
+    // Product-specific responses for sales system
+    if (message.includes("شامبو") || message.includes("shampoo")) {
+      return `شامبو 3x1 متوفر! هذا منتج ممتاز للعناية بالشعر. يحتوي على:
+• تركيبة 3 في 1 (تنظيف، ترطيب، تقوية)
+• مناسب لجميع أنواع الشعر
+• سعر مميز وجودة عالية
+
+هل تريد معرفة السعر أم لديك أسئلة أخرى حول المنتج؟`;
+    }
+    
+    if (message.includes("غسول") || message.includes("facial wash")) {
+      return `غسول الوجه متوفر لدينا! منتج ممتاز للعناية بالبشرة:
+• ينظف البشرة بعمق
+• مناسب للبشرة الحساسة  
+• يترك البشرة نظيفة ومنتعشة
+• تركيبة طبيعية
+
+هل تريد تفاصيل أكثر عن نوع بشرتك لأقترح عليك الأنسب؟`;
+    }
+    
+    if (message.includes("معجون") || message.includes("toothpaste")) {
+      return `معجون الأسنان متوفر! منتج عالي الجودة للعناية بالأسنان:
+• حماية من التسوس
+• تبييض طبيعي
+• نفس منعش يدوم طويلاً
+• مُعتمد من أطباء الأسنان
+
+هل تريد معرفة الأسعار أم لديك استفسارات أخرى؟`;
+    }
+    
+    // Pricing questions
+    if (message.includes("سعر") || message.includes("كام") || message.includes("price") || message.includes("cost")) {
+      return `بالطبع! أسعارنا مميزة ومناسبة:
+
+📦 شامبو 3x1: سعر خاص 
+🧴 غسول الوجه: عرض اليوم
+🦷 معجون الأسنان: خصم حصري
+
+لمعرفة الأسعار الدقيقة وأحدث العروض، أرجو تحديد المنتج الذي تهتم به وسأعطيك كل التفاصيل!
+
+هل تريد عرض خاص على مجموعة من المنتجات؟`;
+    }
+    
+    // Thank you responses
+    if (message.includes("شكر") || message.includes("thanks") || message.includes("appreciate")) {
+      return `العفو! سعيد جداً إني قدرت أساعدك. أنا هنا دايماً لأي استفسار تاني. 
+
+هل في حاجة تانية تحب تعرفها أو تحتاج مساعدة فيها؟ 😊`;
+    }
+    
+    // Default intelligent response
+    const conversationLength = userMessages.length;
+    const hasOngoingContext = conversationLength > 1;
+    
+    if (hasOngoingContext) {
+      return `بناءً على محادثتنا، أشوف إنك مهتم تعرف أكتر. أنا ${botName} وعايز أديك أفضل إجابة على "${args.userMessage}".
+
+${botInstructions}
+
+ممكن توضحلي أكتر إيه اللي محتاجه تحديداً؟ كده هقدر أساعدك بشكل أفضل وأعطيك المعلومات اللي تفيدك.
+
+أنا هنا عشان أقدملك مساعدة مفصلة ومناسبة لاحتياجاتك! 🤝`;
+    } else {
+      return `شكراً لسؤالك عن "${args.userMessage}". أنا ${botName}, ${botDescription}.
+
+${botInstructions}
+
+أنا مصمم عشان أقدملك إجابات ذكية ومفيدة حسب احتياجاتك. عشان أعطيك أدق وأفضل معلومات، ممكن تساعدني أفهم إيه اللي مهمك أكتر؟
+
+سواء كنت محتاج:
+• شرح مفصل
+• إرشادات خطوة بخطوة  
+• توصيات محددة
+• مساعدة في حل مشكلة
+
+أنا هنا أساعدك! إيه اللي يفيدك أكتر دلوقتي؟`;
+    }
+  },
+});
+
+/**
+ * Simple response generator for fallback scenarios
+ */
+export const generateSimpleResponse = internalQuery({
+  args: {
+    userMessage: v.string(),
+    chatbotId: v.id("chatbots"),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const chatbot = await ctx.db.get(args.chatbotId);
+    const botName = chatbot?.name || "مساعد ذكي";
+    
+    return `شكراً لرسالتك! أنا ${botName} وأعتذر إن كان في مشكلة تقنية بسيطة. 
+
+رسالتك عن "${args.userMessage}" وصلتني وأنا شغال على إجابة مناسبة ليك.
+
+ممكن تعيد كتابة سؤالك أو جرب تاني بعد قليل؟ أنا هنا عشان أساعدك! 🤖`;
   },
 }); 

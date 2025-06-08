@@ -4,13 +4,8 @@
 
   // Auto-detect Convex deployment URL
   const getConvexUrl = () => {
-    // Check if we're in development
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:3000'; // Local Convex dev server
-    }
-    
     // Production - Use environment variable or default
-    return window.CONVEX_URL || 'https://chatit.cloud';
+    return 'https://reminiscent-wildebeest-246.convex.site';
   };
 
   // Configuration with dynamic Convex URL
@@ -29,11 +24,11 @@
       theme: 'light',
     },
     version: '2.1.0',
-    fallbackApiUrl: 'https://api.chatit.cloud',
+    // fallbackApiUrl removed - no fallbacks needed
     maxRetries: 3,
     retryDelay: 1000,
     requestTimeout: 15000,
-    fallbackEnabled: true,
+    fallbackEnabled: false, // Completely disable fallbacks - AI responses only
     debug: false
   };
 
@@ -182,21 +177,35 @@
       }
     }
 
-    async testConnection() {
-      const response = await fetch(`${this.convexUrl}/api/health`, {
-        method: 'GET',
-        headers: utils.getCorsHeaders(),
-        mode: 'cors',
-        credentials: 'omit',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Connection test failed: ${response.status}`);
+         async testConnection() {
+       try {
+         const response = await fetch(`${this.convexUrl}/widget/health`, {
+           method: 'GET',
+           headers: utils.getCorsHeaders(),
+           mode: 'cors',
+           credentials: 'omit',
+         });
+         
+         if (!response.ok) {
+           throw new Error(`Connection test failed: ${response.status}`);
+         }
+         
+         return true;
+       } catch (error) {
+         // Handle CORS and network errors
+         if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+           throw new Error('CORS configuration issue - please check your Convex backend setup');
+         }
+         throw error;
+       }
       }
-    }
 
     async makeConvexRequest({ endpoint, method = 'POST', data = null }) {
       const url = `${this.convexUrl}${endpoint}`;
+      
+      // Create AbortController for request timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.requestTimeout);
       
       const options = {
         method,
@@ -210,19 +219,28 @@
         options.body = JSON.stringify(data);
       }
 
-      const response = await fetch(url, options);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Convex API Error ${response.status}: ${errorText}`);
-      }
+      try {
+        const response = await fetch(url, options);
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Convex API Error ${response.status}: ${errorText}`);
+        }
 
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        }
+        
+        return await response.text();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - please try again');
+        }
+        throw error;
       }
-      
-      return await response.text();
     }
 
     async getChatbotInfo() {
@@ -230,7 +248,7 @@
         console.log(`📡 Fetching chatbot info for: ${this.chatbotId}`);
         
         const response = await this.makeConvexRequest({
-          endpoint: `/api/chatbot/${this.chatbotId}`,
+          endpoint: `/widget/chatbot?id=${this.chatbotId}`,
           method: 'GET'
         });
 
@@ -255,15 +273,12 @@
     }
 
     async sendMessage({ message }) {
-      if (!this.isOnline && !CONFIG.fallbackEnabled) {
-        return this.getFallbackResponse(message);
-      }
-
+      // Always attempt real AI response - no fallbacks
       try {
         console.log(`💬 Sending message to Convex: "${message}"`);
         
         const response = await this.makeConvexRequest({
-          endpoint: '/api/chat',
+          endpoint: '/widget/chat',
           method: 'POST',
           data: { 
             chatbotId: this.chatbotId, 
@@ -319,13 +334,12 @@
       this.maxRetryQueueSize = 50;
     }
 
-    add({ content, sender, timestamp = Date.now(), fallback = false, retryable = false }) {
+    add({ content, sender, timestamp = Date.now(), retryable = false }) {
       const message = {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         content: utils.sanitize(content), 
         sender, 
         timestamp,
-        fallback,
         retryable
       };
       this.messages.push(message);
@@ -392,20 +406,7 @@
       }
     }
 
-    // Mark fallback messages as resolved when real response arrives
-    resolveFallbackMessage(originalMessageId, realResponse) {
-      const messageIndex = this.messages.findIndex(msg => msg.id === originalMessageId);
-      if (messageIndex !== -1 && this.messages[messageIndex].fallback) {
-        this.messages[messageIndex] = {
-          ...this.messages[messageIndex],
-          content: realResponse,
-          fallback: false,
-          resolved: true,
-          resolvedAt: Date.now()
-        };
-        this.save();
-      }
-    }
+    // Fallback message resolution removed - all messages are now real AI responses
   }
 
   // UI Manager with enhanced UX
@@ -701,11 +702,7 @@
           transform: rotate(180deg);
         }
 
-        .fallback-message .chatit-message-content {
-          border-left: 3px solid #f59e0b;
-          padding-left: 12px;
-          background-color: rgba(251, 191, 36, 0.1);
-        }
+        /* Fallback message styles removed - all messages are real AI responses */
 
         .retryable-message.user .chatit-message-content {
           border-left: 3px solid #ef4444;
@@ -1242,16 +1239,12 @@
       messageEl.className = `chatit-message ${message.sender}`;
       messageEl.setAttribute('data-message-id', message.id);
       
-      // Add classes for fallback and retryable messages
-      if (message.fallback) {
-        messageEl.classList.add('fallback-message');
-      }
+      // Add classes for retryable messages only (no fallbacks)
       if (message.retryable) {
         messageEl.classList.add('retryable-message');
       }
 
       const timeString = utils.formatTime(message.timestamp);
-      const statusIcon = message.fallback ? '<span class="offline-indicator" title="Offline response">⚡</span>' : '';
       const retryButton = message.retryable && message.sender === 'user' ? 
         '<button class="retry-button" onclick="window.retryMessage(\'' + message.id + '\')" title="Retry message">↻</button>' : '';
 
@@ -1259,7 +1252,6 @@
         <div class="chatit-message-content">${message.content}</div>
         <div class="chatit-message-meta">
           <span class="chatit-message-time">${timeString}</span>
-          ${statusIcon}
           ${retryButton}
         </div>
       `;
@@ -1505,8 +1497,7 @@
           const botMessage = this.messages.add({
             content: response.message,
             sender: 'bot',
-            fallback: response.fallback || false,
-            retryable: response.retryable || false
+            retryable: false // All responses are real AI responses
           });
           this.ui.showMessage(botMessage);
           

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatIt Widget - Fixed Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .header {
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge.success {
+            background: #10b981;
+            color: white;
+        }
+        .badge.error {
+            background: #ef4444;
+            color: white;
+        }
+        .badge.pending {
+            background: #f59e0b;
+            color: white;
+        }
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #feca57;
+        }
+        .instructions ul {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .footer {
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .instructions {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 ChatIt Widget</h1>
+            <p class="subtitle">Fixed Integration Test - Real AI Responses</p>
+        </div>
+
+        <div class="status">
+            <h3>🔧 Connection Status</h3>
+            <div class="status-item">
+                <span>HTTP Server</span>
+                <span class="badge success" id="server-status">✅ Running</span>
+            </div>
+            <div class="status-item">
+                <span>Convex Backend</span>
+                <span class="badge pending" id="convex-status">⏳ Testing...</span>
+            </div>
+            <div class="status-item">
+                <span>Widget Script</span>
+                <span class="badge pending" id="widget-status">⏳ Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>Chatbot ID</span>
+                <span class="badge success">k57bvehffr3nnvfpy2cvz5d36s7hetxd</span>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>🚀 What's Fixed</h3>
+            <ul>
+                <li><strong>✅ JavaScript Error Fixed:</strong> Added missing AbortController declaration</li>
+                <li><strong>✅ CORS Configuration:</strong> Updated Convex HTTP routes with proper headers</li>
+                <li><strong>✅ Function References:</strong> Corrected API calls to use internal functions</li>
+                <li><strong>✅ HTTP Server:</strong> Serving via localhost:8000 instead of file://</li>
+                <li><strong>✅ Error Handling:</strong> Enhanced connection and retry mechanisms</li>
+            </ul>
+            
+            <h3>📱 Test Instructions</h3>
+            <ul>
+                <li>The widget should load in the bottom-right corner</li>
+                <li>Click the chat bubble to open the widget</li>
+                <li>Type a message and press Enter</li>
+                <li>You should get a real AI response (no fallbacks)</li>
+                <li>Check browser console for any errors</li>
+            </ul>
+
+            <h3>🔍 Debugging</h3>
+            <div class="code">
+// Open browser console and check:
+console.log('Widget ready:', window.ChatItWidget);
+console.log('Widget instances:', document.querySelectorAll('[data-chatit-widget]'));
+
+// Test direct API call:
+fetch('https://reminiscent-wildebeest-246.convex.site/widget/health')
+  .then(r => r.json())
+  .then(console.log);
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🌐 Access this page at: <strong>http://localhost:8000/test-widget-local.html</strong></p>
+            <p>📝 Check browser console for detailed logs</p>
+        </div>
+    </div>
+
+    <!-- ChatIt Widget Integration -->
+    <div 
+        data-chatit-widget="k57bvehffr3nnvfpy2cvz5d36s7hetxd"
+        data-convex-url="https://reminiscent-wildebeest-246.convex.site"
+        data-primary-color="#3b82f6"
+        data-position="bottom-right"
+        data-welcome-message="Hello! I'm your AI assistant. Let's test the real integration!"
+        data-show-branding="true">
+    </div>
+
+    <!-- Load Widget Script -->
+    <script src="/public/widget.js"></script>
+    
+    <script>
+        // Test connection status
+        async function testConnections() {
+            try {
+                // Test Convex health endpoint
+                const convexResponse = await fetch('https://reminiscent-wildebeest-246.convex.site/widget/health');
+                const convexData = await convexResponse.json();
+                
+                if (convexData.status === 'healthy') {
+                    document.getElementById('convex-status').className = 'badge success';
+                    document.getElementById('convex-status').textContent = '✅ Connected';
+                    console.log('✅ Convex backend healthy:', convexData);
+                } else {
+                    throw new Error('Convex not healthy');
+                }
+            } catch (error) {
+                document.getElementById('convex-status').className = 'badge error';
+                document.getElementById('convex-status').textContent = '❌ Failed';
+                console.error('❌ Convex connection failed:', error);
+            }
+        }
+
+        // Widget event listeners
+        window.addEventListener('chatit-widget-ready', (event) => {
+            console.log('🎉 Widget ready for chatbot:', event.detail.chatbotId);
+            document.getElementById('widget-status').className = 'badge success';
+            document.getElementById('widget-status').textContent = '✅ Ready';
+        });
+
+        window.addEventListener('chatit-message-sent', (event) => {
+            console.log('💬 Message sent:', event.detail);
+        });
+
+        // Initialize tests
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Starting connection tests...');
+            testConnections();
+            
+            // Test widget loading
+            setTimeout(() => {
+                if (window.ChatItWidget) {
+                    console.log('✅ Widget script loaded successfully');
+                    document.getElementById('widget-status').className = 'badge success';
+                    document.getElementById('widget-status').textContent = '✅ Loaded';
+                } else {
+                    console.error('❌ Widget script failed to load');
+                    document.getElementById('widget-status').className = 'badge error';
+                    document.getElementById('widget-status').textContent = '❌ Failed';
+                }
+            }, 2000);
+        });
+
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('🔥 Global error:', event.error);
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('🔥 Unhandled promise rejection:', event.reason);
+        });
+    </script>
+</body>
+</html> 

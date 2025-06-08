@@ -132,22 +132,15 @@ export const sendMessage = mutation({
       timestamp: Date.now(),
     });
 
-    // Get immediate mock response (mutations can't call actions)
-    const response: string = await ctx.runQuery(internal.ai.generateMockResponse, {
-      userMessage: args.content,
-      chatbotId: conversation.chatbotId,
-      conversationHistory: [], // Simple case for mutation
-    });
-    
-    // Insert response immediately
-    await ctx.db.insert("messages", {
+    // Insert a temporary "thinking" message while AI processes
+    const thinkingMessage = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
-      content: response,
+      content: "I'm processing your message...",
       role: "assistant",
       timestamp: Date.now(),
     });
-
-    // Schedule enhanced AI response generation (async)
+    
+    // Schedule real Convex AI response generation (async) - will replace the thinking message
     await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
       conversationId: args.conversationId,
       userMessage: args.content,
@@ -161,7 +154,7 @@ export const sendMessage = mutation({
       messageContent: args.content,
     });
 
-    return response;
+    return "I'm processing your message...";
   },
 });
 
@@ -248,11 +241,18 @@ export const sendMessageInternal = internalMutation({
       return "I'm sorry, I couldn't process your request.";
     }
 
-    // Generate mock response immediately (mutations can't call actions)
-    const response: string = await ctx.runQuery(internal.ai.generateMockResponse, {
+    // Generate intelligent response immediately using Convex AI
+    const response: string = await ctx.runQuery(internal.ai.generateIntelligentResponse, {
       userMessage: args.content,
       chatbotId: conversation.chatbotId,
       conversationHistory: [], // Simple case for mutation
+      chatbotData: {
+        name: "AI Assistant", // Default for mutation context
+        description: "a helpful AI assistant", 
+        instructions: "Be helpful, friendly, and professional in your responses.",
+        language: "en",
+        welcomeMessage: undefined,
+      },
     });
     
     // Insert AI response

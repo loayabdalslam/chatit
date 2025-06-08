@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced AI Chatbot Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #2563eb;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #1d4ed8;
+        }
+        .response-area {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            min-height: 100px;
+            border: 1px solid #e2e8f0;
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 0;
+        }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
+        .loading { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🤖 Enhanced AI Chatbot System Test</h1>
+        <p>Testing the improved AI system with chatbot-specific responses and real OpenAI integration.</p>
+        
+        <div class="test-section">
+            <h3>🔄 Health Check</h3>
+            <button class="test-button" onclick="testHealth()">Test Health Endpoint</button>
+            <div id="health-response" class="response-area"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>👋 Greeting Test</h3>
+            <button class="test-button" onclick="testGreeting()">Test Greeting</button>
+            <div id="greeting-response" class="response-area"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🛠️ Capabilities Test</h3>
+            <button class="test-button" onclick="testCapabilities()">Test Capabilities</button>
+            <div id="capabilities-response" class="response-area"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>💡 Complex Query Test</h3>
+            <button class="test-button" onclick="testComplexQuery()">Test Complex Question</button>
+            <div id="complex-response" class="response-area"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 Custom Test</h3>
+            <input type="text" id="custom-message" placeholder="Enter your test message..." style="width: 300px; padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testCustom()">Send Custom Message</button>
+            <div id="custom-response" class="response-area"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://reminiscent-wildebeest-246.convex.site/widget';
+        const CHATBOT_ID = 'k57bvehffr3nnvfpy2cvz5d36s7hetxd';
+        
+        async function testHealth() {
+            const responseDiv = document.getElementById('health-response');
+            responseDiv.innerHTML = '<div class="status loading">Testing health endpoint...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                responseDiv.innerHTML = `
+                    <div class="status success">✅ Health Check Success</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status error">❌ Health Check Failed</div>
+                    <div>Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        async function testGreeting() {
+            await testMessage("Hello! How can you help me today?", 'greeting-response');
+        }
+        
+        async function testCapabilities() {
+            await testMessage("What are your capabilities and what can you help me with?", 'capabilities-response');
+        }
+        
+        async function testComplexQuery() {
+            await testMessage("I need help integrating your chatbot into my e-commerce website. What are the steps and what pricing plans do you offer?", 'complex-response');
+        }
+        
+        async function testCustom() {
+            const message = document.getElementById('custom-message').value;
+            if (!message.trim()) {
+                alert('Please enter a message to test');
+                return;
+            }
+            await testMessage(message, 'custom-response');
+        }
+        
+        async function testMessage(message, responseElementId) {
+            const responseDiv = document.getElementById(responseElementId);
+            responseDiv.innerHTML = '<div class="status loading">🤖 AI is thinking...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        chatbotId: CHATBOT_ID
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    responseDiv.innerHTML = `
+                        <div class="status success">✅ AI Response Success</div>
+                        <div><strong>You:</strong> ${message}</div>
+                        <div style="margin-top: 10px;"><strong>AI (${data.timestamp}):</strong></div>
+                        <div style="background: white; padding: 10px; border-radius: 4px; margin-top: 5px; border-left: 4px solid #2563eb;">${data.message}</div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ AI Response Failed</div>
+                        <div>Error: ${data.error || 'Unknown error'}</div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status error">❌ Request Failed</div>
+                    <div>Error: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.addEventListener('load', () => {
+            setTimeout(testHealth, 500);
+        });
+    </script>
+</body>
+</html> 

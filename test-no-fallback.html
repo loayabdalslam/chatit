@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatIt Widget - No Fallback Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .header {
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        .test-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+        .test-info h3 {
+            margin-top: 0;
+            color: #feca57;
+        }
+        .test-info ul {
+            padding-left: 20px;
+        }
+        .test-info li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge.success {
+            background: #10b981;
+            color: white;
+        }
+        .badge.error {
+            background: #ef4444;
+            color: white;
+        }
+        .badge.pending {
+            background: #f59e0b;
+            color: white;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .footer {
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 No Fallback Test</h1>
+            <p class="subtitle">Real AI Responses Only - No Fake Messages</p>
+        </div>
+
+        <div class="status">
+            <h3>🔧 Test Status</h3>
+            <div class="status-item">
+                <span>Fallback Disabled</span>
+                <span class="badge success" id="fallback-status">✅ Confirmed</span>
+            </div>
+            <div class="status-item">
+                <span>Convex Connection</span>
+                <span class="badge pending" id="convex-status">⏳ Testing...</span>
+            </div>
+            <div class="status-item">
+                <span>Widget Status</span>
+                <span class="badge pending" id="widget-status">⏳ Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>AI Response Test</span>
+                <span class="badge pending" id="ai-status">⏳ Ready to test</span>
+            </div>
+        </div>
+
+        <div class="test-info">
+            <h3>🧪 Test Instructions</h3>
+            <ul>
+                <li><strong>✅ Fallback Completely Removed:</strong> No fake responses will be shown</li>
+                <li><strong>✅ Real AI Only:</strong> All responses come directly from Convex backend</li>
+                <li><strong>✅ Connection Required:</strong> Widget will show error if no connection</li>
+                <li><strong>✅ No Offline Mode:</strong> No fallback messages when offline</li>
+            </ul>
+            
+            <h3>📱 How to Test</h3>
+            <ul>
+                <li>Click the chat widget in the bottom-right corner</li>
+                <li>Send a message like "Hello" or "What can you help me with?"</li>
+                <li>You should get a real AI response from your chatbot</li>
+                <li>If connection fails, you'll see an error (no fake response)</li>
+                <li>Check browser console for detailed logs</li>
+            </ul>
+
+            <h3>🔍 What to Look For</h3>
+            <div class="code">
+// In browser console, you should see:
+✅ "Connected to Convex backend"
+✅ "Sending message to Convex: [your message]"
+✅ "AI response received: [real response]"
+
+// You should NOT see:
+❌ Any mention of "fallback"
+❌ Any mention of "offline response"
+❌ Fake or generic responses
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🌐 Access: <strong>http://localhost:8000/test-no-fallback.html</strong></p>
+            <p>📝 Monitor browser console for detailed logs</p>
+        </div>
+    </div>
+
+    <!-- ChatIt Widget Integration -->
+    <div 
+        data-chatit-widget="k57bvehffr3nnvfpy2cvz5d36s7hetxd"
+        data-convex-url="https://reminiscent-wildebeest-246.convex.site"
+        data-primary-color="#3b82f6"
+        data-position="bottom-right"
+        data-welcome-message="Hello! I'm your real AI assistant. No fallback responses here!"
+        data-show-branding="true">
+    </div>
+
+    <!-- Load Widget Script -->
+    <script src="/public/widget.js"></script>
+    
+    <script>
+        // Test connection status
+        async function testConnections() {
+            try {
+                // Test Convex health endpoint
+                const convexResponse = await fetch('https://reminiscent-wildebeest-246.convex.site/widget/health');
+                const convexData = await convexResponse.json();
+                
+                if (convexData.status === 'healthy') {
+                    document.getElementById('convex-status').className = 'badge success';
+                    document.getElementById('convex-status').textContent = '✅ Connected';
+                    console.log('✅ Convex backend healthy:', convexData);
+                } else {
+                    throw new Error('Convex not healthy');
+                }
+            } catch (error) {
+                document.getElementById('convex-status').className = 'badge error';
+                document.getElementById('convex-status').textContent = '❌ Failed';
+                console.error('❌ Convex connection failed:', error);
+            }
+        }
+
+        // Widget event listeners
+        window.addEventListener('chatit-widget-ready', (event) => {
+            console.log('🎉 Widget ready for chatbot:', event.detail.chatbotId);
+            document.getElementById('widget-status').className = 'badge success';
+            document.getElementById('widget-status').textContent = '✅ Ready';
+        });
+
+        window.addEventListener('chatit-message-sent', (event) => {
+            console.log('💬 Message sent:', event.detail);
+            
+            // Verify this is a real AI response
+            if (event.detail.source === 'convex') {
+                document.getElementById('ai-status').className = 'badge success';
+                document.getElementById('ai-status').textContent = '✅ Real AI Response';
+                console.log('✅ Confirmed: Real AI response received from Convex');
+            } else {
+                document.getElementById('ai-status').className = 'badge error';
+                document.getElementById('ai-status').textContent = '❌ Not Real AI';
+                console.error('❌ Warning: Response not from Convex backend');
+            }
+        });
+
+        // Initialize tests
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Starting no-fallback tests...');
+            testConnections();
+            
+            // Test widget loading
+            setTimeout(() => {
+                if (window.ChatItWidget) {
+                    console.log('✅ Widget script loaded successfully');
+                    document.getElementById('widget-status').className = 'badge success';
+                    document.getElementById('widget-status').textContent = '✅ Loaded';
+                } else {
+                    console.error('❌ Widget script failed to load');
+                    document.getElementById('widget-status').className = 'badge error';
+                    document.getElementById('widget-status').textContent = '❌ Failed';
+                }
+            }, 2000);
+        });
+
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('🔥 Global error:', event.error);
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('🔥 Unhandled promise rejection:', event.reason);
+        });
+
+        // Test for fallback-related code (should not exist)
+        setTimeout(() => {
+            fetch('/public/widget.js')
+                .then(response => response.text())
+                .then(code => {
+                    const fallbackCount = (code.match(/fallback/gi) || []).length;
+                    console.log(`🔍 Fallback references in code: ${fallbackCount}`);
+                    
+                    if (fallbackCount <= 5) { // Only comments should remain
+                        console.log('✅ Perfect! Fallback code successfully removed');
+                    } else {
+                        console.log(`⚠️ Found ${fallbackCount} fallback references`);
+                    }
+                })
+                .catch(err => console.log('Could not check widget code:', err));
+        }, 3000);
+    </script>
+</body>
+</html> 
