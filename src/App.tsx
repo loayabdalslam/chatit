@@ -19,6 +19,7 @@ import { DetailedDashboard } from "./components/DetailedDashboard";
 import { ReportGenerator } from "./components/ReportGenerator";
 import { ConversationHistory } from "./components/ConversationHistory";
 import { ReferralsDashboard } from "./components/ReferralsDashboard";
+import { ReferralDebugger } from "./components/ReferralDebugger";
 import { Sidebar } from "./components/Sidebar";
 import { MessageLimitBanner } from "./components/MessageLimitBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -41,7 +42,8 @@ type Page =
   | "detailed-dashboard"
   | "reports"
   | "conversations"
-  | "referrals";
+  | "referrals"
+  | "debug";
 
 // Check if we're in widget mode - handle both /widget/ID and just /ID patterns
 const checkWidgetRoute = () => {
@@ -187,6 +189,8 @@ function AppContent() {
         return <AdminSetup onComplete={() => setCurrentPage("admin")} />;
       case "referrals":
         return <ReferralsDashboard />;
+      case "debug":
+        return <ReferralDebugger />;
       default:
         return <Dashboard />;
     }
