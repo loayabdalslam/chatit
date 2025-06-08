@@ -142,9 +142,9 @@ export const sendMessage = mutation({
     
     // Schedule real Convex AI response generation (async) - will replace the thinking message
     await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
-      conversationId: args.conversationId,
       userMessage: args.content,
       chatbotId: conversation.chatbotId,
+      threadId: args.conversationId,
     });
 
     // Trigger sentiment analysis for user message
@@ -245,14 +245,13 @@ export const sendMessageInternal = internalMutation({
     const chatbot = await ctx.db.get(conversation.chatbotId);
     
     // Generate intelligent response immediately using instruction-based processing
-    const response: string = await ctx.runQuery(internal.ai.processInstructionBasedResponse, {
+    const responseData = await ctx.runQuery(internal.ai.processInstructionBasedResponse, {
       userMessage: args.content,
-      chatbotInstructions: chatbot?.instructions || "Be helpful and friendly",
-      chatbotName: chatbot?.name || "AI Assistant",
-      chatbotDescription: chatbot?.description || "A helpful AI assistant",
-      conversationHistory: [], // Simple case for immediate response
-      useAdvancedProcessing: true,
+      instructions: chatbot?.instructions || "Be helpful and friendly",
+      botName: chatbot?.name || "AI Assistant",
     });
+    
+    const response = responseData.response;
     
     // Insert AI response
     await ctx.db.insert("messages", {
@@ -264,9 +263,9 @@ export const sendMessageInternal = internalMutation({
 
     // Schedule enhanced AI response generation (async)
     await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
-      conversationId: args.conversationId,
       userMessage: args.content,
       chatbotId: conversation.chatbotId,
+      threadId: args.conversationId,
     });
 
     // Trigger sentiment analysis for user message

@@ -42,11 +42,12 @@ export const handleChatMessage = internalAction({
       });
 
       // Generate AI response using the new intelligent mock system
-      const aiResponse = await ctx.runAction(internal.ai.generateResponseSync, {
-        conversationId: conversation._id,
+      const aiResponseData = await ctx.runQuery(internal.ai.generateResponseSync, {
         userMessage: args.message,
         chatbotId: args.chatbotId,
       });
+      
+      const aiResponse = aiResponseData.response;
 
       // Insert AI response
       await ctx.runMutation(internal.chat.insertAIMessage, {
