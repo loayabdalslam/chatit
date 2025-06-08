@@ -454,4 +454,53 @@ export const testReferralFlow = mutation({
       };
     }
   },
+});
+
+// Test function to create a sample referral (for testing only)
+export const createTestReferral = mutation({
+  args: {
+    referralCode: v.string(),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Find the referrer by referral code
+    const referrer = await ctx.db
+      .query("users")
+      .withIndex("by_referral_code", (q: any) => q.eq("referralCode", args.referralCode))
+      .first();
+
+    if (!referrer) {
+      throw new Error("Invalid referral code");
+    }
+
+    if (referrer._id === userId) {
+      throw new Error("Cannot refer yourself");
+    }
+
+    // Check if this user was already referred
+    const existingReferral = await ctx.db
+      .query("referrals")
+      .withIndex("by_referred_user", (q: any) => q.eq("referredUserId", userId))
+      .first();
+
+    if (existingReferral) {
+      throw new Error("User has already been referred");
+    }
+
+    // Create test referral record
+    const referralId = await ctx.db.insert("referrals", {
+      referrerId: referrer._id,
+      referredUserId: userId,
+      status: "pending",
+      commission: 0,
+      createdAt: Date.now(),
+    });
+
+    return `Test referral created with ID: ${referralId}`;
+  },
 }); 
