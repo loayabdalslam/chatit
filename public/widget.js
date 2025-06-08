@@ -27,7 +27,22 @@
       fontFamily: 'system-ui',
       animation: 'bounce',
       theme: 'light',
-    }
+    },
+    version: '2.1.0',
+    fallbackApiUrl: 'https://api.chatit.cloud',
+    maxRetries: 3,
+    retryDelay: 1000,
+    requestTimeout: 15000,
+    fallbackEnabled: true,
+    debug: false
+  };
+
+  // Logging utility
+  const logger = {
+    debug: (...args) => CONFIG.debug && console.log('[ChatIt Debug]', ...args),
+    warn: (...args) => console.warn('[ChatIt Warning]', ...args),
+    error: (...args) => console.error('[ChatIt Error]', ...args),
+    info: (...args) => console.info('[ChatIt Info]', ...args)
   };
 
   // Utilities for widget functionality
@@ -117,7 +132,32 @@
       const rgb = utils.hexToRgb(color);
       if (!rgb) return color;
       return `linear-gradient(135deg, ${color} 0%, rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8) 100%)`;
-    }
+    },
+
+    // Enhanced error detection
+    isNetworkError: (error) => {
+      return error instanceof TypeError && 
+             (error.message.includes('Failed to fetch') || 
+              error.message.includes('Network request failed') ||
+              error.message.includes('net::ERR_'));
+    },
+
+    isCorsError: (error) => {
+      return error.message && 
+             (error.message.includes('CORS') || 
+              error.message.includes('Cross-Origin') ||
+              error.message.includes('Access-Control-Allow-Origin'));
+    },
+
+    // Smart retry logic
+    shouldRetry: (error, attempt) => {
+      if (attempt >= CONFIG.maxRetries) return false;
+      return utils.isNetworkError(error) || 
+             utils.isCorsError(error) || 
+             (error.status >= 500 && error.status < 600);
+    },
+
+    delay: (ms) => new Promise(resolve => setTimeout(resolve, ms))
   };
 
   // Direct Convex API Manager - Real AI Integration
@@ -163,6 +203,7 @@
         headers: utils.getCorsHeaders(),
         mode: 'cors',
         credentials: 'omit',
+        signal: controller.signal
       };
 
       if (data && method !== 'GET') {
@@ -214,6 +255,10 @@
     }
 
     async sendMessage({ message }) {
+      if (!this.isOnline && !CONFIG.fallbackEnabled) {
+        return this.getFallbackResponse(message);
+      }
+
       try {
         console.log(`💬 Sending message to Convex: "${message}"`);
         
@@ -270,18 +315,43 @@
       this.messages = [];
       this.sessionId = sessionId;
       this.storageKey = `chatit-messages-${sessionId}`;
+      this.retryQueue = [];
+      this.maxRetryQueueSize = 50;
     }
 
-    add({ content, sender, timestamp = Date.now() }) {
+    add({ content, sender, timestamp = Date.now(), fallback = false, retryable = false }) {
       const message = {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         content: utils.sanitize(content), 
         sender, 
-        timestamp
+        timestamp,
+        fallback,
+        retryable
       };
       this.messages.push(message);
       this.save();
       return message;
+    }
+
+    addToRetryQueue(message) {
+      if (this.retryQueue.length >= this.maxRetryQueueSize) {
+        this.retryQueue.shift(); // Remove oldest
+      }
+      this.retryQueue.push({
+        ...message,
+        retryCount: (message.retryCount || 0) + 1,
+        retryTimestamp: Date.now()
+      });
+      this.saveRetryQueue();
+    }
+
+    getRetryQueue() {
+      return [...this.retryQueue];
+    }
+
+    clearRetryQueue() {
+      this.retryQueue = [];
+      this.saveRetryQueue();
     }
 
     getAll() {
@@ -292,7 +362,15 @@
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
       } catch (e) {
-        console.warn('Failed to save messages:', e);
+        logger.warn('Failed to save messages:', e);
+      }
+    }
+
+    saveRetryQueue() {
+      try {
+        localStorage.setItem(`${this.storageKey}-retry`, JSON.stringify(this.retryQueue));
+      } catch (e) {
+        logger.warn('Failed to save retry queue:', e);
       }
     }
 
@@ -302,9 +380,30 @@
         if (saved) {
           this.messages = JSON.parse(saved);
         }
+        
+        const retryQueue = localStorage.getItem(`${this.storageKey}-retry`);
+        if (retryQueue) {
+          this.retryQueue = JSON.parse(retryQueue);
+        }
       } catch (e) {
-        console.warn('Failed to load messages:', e);
+        logger.warn('Failed to load messages:', e);
         this.messages = [];
+        this.retryQueue = [];
+      }
+    }
+
+    // Mark fallback messages as resolved when real response arrives
+    resolveFallbackMessage(originalMessageId, realResponse) {
+      const messageIndex = this.messages.findIndex(msg => msg.id === originalMessageId);
+      if (messageIndex !== -1 && this.messages[messageIndex].fallback) {
+        this.messages[messageIndex] = {
+          ...this.messages[messageIndex],
+          content: realResponse,
+          fallback: false,
+          resolved: true,
+          resolvedAt: Date.now()
+        };
+        this.save();
       }
     }
   }
@@ -556,11 +655,96 @@
           margin-left: 8px;
         }
 
+        .chatit-message-meta {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 4px;
+          justify-content: flex-end;
+        }
+
+        .chatit-message.bot .chatit-message-meta {
+          justify-content: flex-start;
+        }
+
         .chatit-message-time {
           font-size: 11px;
           opacity: 0.6;
-          margin-top: 4px;
+        }
+
+        .offline-indicator {
+          font-size: 12px;
+          color: #f59e0b;
+          cursor: help;
+          animation: pulse 2s infinite;
+        }
+
+        .retry-button {
+          background: none;
+          border: 1px solid #d1d5db;
+          border-radius: 50%;
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 10px;
+          color: #6b7280;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+
+        .retry-button:hover {
+          background-color: #f3f4f6;
+          color: #374151;
+          transform: rotate(180deg);
+        }
+
+        .fallback-message .chatit-message-content {
+          border-left: 3px solid #f59e0b;
+          padding-left: 12px;
+          background-color: rgba(251, 191, 36, 0.1);
+        }
+
+        .retryable-message.user .chatit-message-content {
+          border-left: 3px solid #ef4444;
+          padding-left: 12px;
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .chatit-connection-status {
+          padding: 8px 12px;
+          margin: 8px 16px;
+          border-radius: 6px;
+          font-size: 12px;
           text-align: center;
+          display: none;
+          transition: all 0.3s ease;
+        }
+
+        .chatit-connection-status.offline {
+          background-color: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fbbf24;
+          display: block;
+        }
+
+        .chatit-connection-status.online {
+          background-color: #d1fae5;
+          color: #065f46;
+          border: 1px solid #34d399;
+          display: block;
+          animation: slideIn 0.3s ease;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         .chatit-typing {
@@ -1056,14 +1240,43 @@
       const messagesContainer = this.container.querySelector('.chatit-messages');
       const messageEl = document.createElement('div');
       messageEl.className = `chatit-message ${message.sender}`;
+      messageEl.setAttribute('data-message-id', message.id);
       
+      // Add classes for fallback and retryable messages
+      if (message.fallback) {
+        messageEl.classList.add('fallback-message');
+      }
+      if (message.retryable) {
+        messageEl.classList.add('retryable-message');
+      }
+
+      const timeString = utils.formatTime(message.timestamp);
+      const statusIcon = message.fallback ? '<span class="offline-indicator" title="Offline response">⚡</span>' : '';
+      const retryButton = message.retryable && message.sender === 'user' ? 
+        '<button class="retry-button" onclick="window.retryMessage(\'' + message.id + '\')" title="Retry message">↻</button>' : '';
+
       messageEl.innerHTML = `
         <div class="chatit-message-content">${message.content}</div>
-        <div class="chatit-message-time">${utils.formatTime(message.timestamp)}</div>
+        <div class="chatit-message-meta">
+          <span class="chatit-message-time">${timeString}</span>
+          ${statusIcon}
+          ${retryButton}
+        </div>
       `;
       
       messagesContainer.appendChild(messageEl);
       this.scrollToBottom();
+
+      // Add animation
+      messageEl.style.opacity = '0';
+      messageEl.style.transform = 'translateY(10px)';
+      requestAnimationFrame(() => {
+        messageEl.style.transition = 'all 0.3s ease';
+        messageEl.style.opacity = '1';
+        messageEl.style.transform = 'translateY(0)';
+      });
+
+      return messageEl;
     }
 
     showTyping() {
@@ -1257,15 +1470,19 @@
       }
     }
 
-    async sendMessage(messageText) {
+    async sendMessage(messageText, isRetry = false) {
       if (!messageText.trim()) return;
 
-      // Add user message to UI
-      const userMessage = this.messages.add({
-        content: messageText,
-        sender: 'user'
-      });
-      this.ui.showMessage(userMessage);
+      let userMessage;
+      if (!isRetry) {
+        // Add user message to UI
+        userMessage = this.messages.add({
+          content: messageText,
+          sender: 'user',
+          retryable: true
+        });
+        this.ui.showMessage(userMessage);
+      }
 
       // Show typing indicator
       this.ui.showTyping();
@@ -1287,7 +1504,9 @@
           // Add real AI response to UI
           const botMessage = this.messages.add({
             content: response.message,
-            sender: 'bot'
+            sender: 'bot',
+            fallback: response.fallback || false,
+            retryable: response.retryable || false
           });
           this.ui.showMessage(botMessage);
           
@@ -1388,6 +1607,16 @@
     }
   }
 
+  // Global retry function for message retry buttons
+  window.retryMessage = function(messageId) {
+    const widgets = document.querySelectorAll('[data-chatit-widget]');
+    widgets.forEach(element => {
+      if (element.chatItWidget) {
+        element.chatItWidget.retryMessage(messageId);
+      }
+    });
+  };
+
   // Auto-initialization for embedded widgets
   function initializeWidgets() {
     const widgets = document.querySelectorAll('[data-chatit-widget]');
@@ -1410,7 +1639,7 @@
             if (attr === 'showBranding') {
               customConfig[attr] = value === 'true';
             } else if (attr === 'borderRadius') {
-              customConfig[attr] = parseInt(value, 10) || CONFIG.defaults[attr];
+              customConfig[attr] = parseInt(value, 10) || CONFIG.borderRadius;
             } else {
               customConfig[attr] = value;
             }
@@ -1431,9 +1660,23 @@
 
         // Store reference
         element.chatItWidget = widget;
+        element.dataset.initialized = 'true';
       }
     });
   }
+
+  // Auto-retry failed messages when connection is restored
+  window.addEventListener('online', () => {
+    logger.info('Connection restored, attempting to retry failed messages');
+    setTimeout(() => {
+      const widgets = document.querySelectorAll('[data-chatit-widget]');
+      widgets.forEach(element => {
+        if (element.chatItWidget) {
+          element.chatItWidget.retryAllFailedMessages();
+        }
+      });
+    }, 2000); // Wait 2 seconds before retrying
+  });
 
   // Initialize widgets when DOM is ready
   if (document.readyState === 'loading') {

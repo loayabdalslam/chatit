@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        #logs {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Enhanced ChatIt Widget Test</h1>
+        
+        <div class="test-section">
+            <h3>Widget Status</h3>
+            <p>Connection: <span id="status">Checking...</span></p>
+            <p>Last Update: <span id="lastUpdate">-</span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>Error Testing</h3>
+            <button class="test-btn" onclick="simulateOffline()">Simulate Offline</button>
+            <button class="test-btn" onclick="simulateCORS()">Simulate CORS Error</button>
+            <button class="test-btn" onclick="simulateTimeout()">Simulate Timeout</button>
+            <button class="test-btn" onclick="restoreConnection()">Restore Connection</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Instructions</h3>
+            <ol>
+                <li>The chat widget will appear in the bottom-right corner</li>
+                <li>Try sending messages normally first</li>
+                <li>Click error simulation buttons above</li>
+                <li>Send messages to see fallback responses</li>
+                <li>Click "Restore Connection" to test auto-retry</li>
+                <li>Check the logs below for detailed information</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>Debug Logs</h3>
+            <div id="logs"></div>
+            <button class="test-btn" onclick="clearLogs()">Clear Logs</button>
+        </div>
+    </div>
+
+    <!-- Enhanced ChatIt Widget -->
+    <div data-chatit-widget="test-chatbot-id"
+         data-primary-color="#007bff"
+         data-position="bottom-right"
+         data-welcome-message="Hi! I'm your enhanced assistant. Try me even when there are connection issues!"
+         data-placeholder="Type your message..."
+         data-animation="bounce">
+    </div>
+
+    <script src="./widget.js"></script>
+
+    <script>
+        // Test functionality
+        let originalFetch = window.fetch;
+        let simulationActive = false;
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff4444' : type === 'warn' ? '#ffaa00' : '#00ff00';
+            logs.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateStatus() {
+            const statusEl = document.getElementById('status');
+            const updateEl = document.getElementById('lastUpdate');
+            
+            if (navigator.onLine && !simulationActive) {
+                statusEl.textContent = 'Online ✅';
+                statusEl.style.color = 'green';
+            } else {
+                statusEl.textContent = 'Offline/Error ⚠️';
+                statusEl.style.color = 'red';
+            }
+            
+            updateEl.textContent = new Date().toLocaleTimeString();
+        }
+
+        function simulateOffline() {
+            simulationActive = true;
+            window.fetch = function() {
+                return Promise.reject(new TypeError('Failed to fetch'));
+            };
+            log('Simulating offline mode', 'warn');
+            updateStatus();
+        }
+
+        function simulateCORS() {
+            simulationActive = true;
+            window.fetch = function() {
+                return Promise.reject(new Error('Access to fetch blocked by CORS policy'));
+            };
+            log('Simulating CORS error', 'warn');
+            updateStatus();
+        }
+
+        function simulateTimeout() {
+            simulationActive = true;
+            window.fetch = function() {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => reject(new Error('Request timeout')), 100);
+                });
+            };
+            log('Simulating network timeout', 'warn');
+            updateStatus();
+        }
+
+        function restoreConnection() {
+            simulationActive = false;
+            window.fetch = originalFetch;
+            log('Connection restored', 'info');
+            updateStatus();
+            
+            // Trigger online event for auto-retry
+            window.dispatchEvent(new Event('online'));
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            log('Logs cleared');
+        }
+
+        // Event listeners
+        window.addEventListener('chatit-widget-ready', (e) => {
+            log(`Widget ready: ${e.detail.chatbotId}`, 'info');
+        });
+
+        window.addEventListener('chatit-widget-message', (e) => {
+            const fallbackText = e.detail.fallback ? ' (FALLBACK)' : '';
+            log(`Message: "${e.detail.message}" -> Response received${fallbackText}`, 'info');
+        });
+
+        window.addEventListener('online', () => {
+            log('Browser online event detected', 'info');
+            updateStatus();
+        });
+
+        window.addEventListener('offline', () => {
+            log('Browser offline event detected', 'warn');
+            updateStatus();
+        });
+
+        // Initialize
+        updateStatus();
+        log('Enhanced ChatIt Widget test page loaded');
+        log('Try sending messages and testing error scenarios!');
+        
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html> 
