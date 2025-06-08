@@ -16,7 +16,22 @@
       fontFamily: 'system-ui',
       animation: 'bounce',
       theme: 'light',
-    }
+    },
+    version: '2.1.0',
+    fallbackApiUrl: 'https://api.chatit.cloud',
+    maxRetries: 3,
+    retryDelay: 1000,
+    requestTimeout: 15000,
+    fallbackEnabled: true,
+    debug: false
+  };
+
+  // Logging utility
+  const logger = {
+    debug: (...args) => CONFIG.debug && console.log('[ChatIt Debug]', ...args),
+    warn: (...args) => console.warn('[ChatIt Warning]', ...args),
+    error: (...args) => console.error('[ChatIt Error]', ...args),
+    info: (...args) => console.info('[ChatIt Info]', ...args)
   };
 
   // Utilities for widget functionality
@@ -59,6 +74,7 @@
     getCorsHeaders: () => ({
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
     }),
 
     // Check if device is mobile
@@ -105,52 +121,150 @@
       const rgb = utils.hexToRgb(color);
       if (!rgb) return color;
       return `linear-gradient(135deg, ${color} 0%, rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.8) 100%)`;
-    }
+    },
+
+    // Enhanced error detection
+    isNetworkError: (error) => {
+      return error instanceof TypeError && 
+             (error.message.includes('Failed to fetch') || 
+              error.message.includes('Network request failed') ||
+              error.message.includes('net::ERR_'));
+    },
+
+    isCorsError: (error) => {
+      return error.message && 
+             (error.message.includes('CORS') || 
+              error.message.includes('Cross-Origin') ||
+              error.message.includes('Access-Control-Allow-Origin'));
+    },
+
+    // Smart retry logic
+    shouldRetry: (error, attempt) => {
+      if (attempt >= CONFIG.maxRetries) return false;
+      return utils.isNetworkError(error) || 
+             utils.isCorsError(error) || 
+             (error.status >= 500 && error.status < 600);
+    },
+
+    delay: (ms) => new Promise(resolve => setTimeout(resolve, ms))
   };
 
   // API Manager for Convex integration
   class APIManager {
     constructor({ apiUrl, chatbotId }) {
       this.apiUrl = apiUrl || CONFIG.apiUrl;
+      this.fallbackApiUrl = CONFIG.fallbackApiUrl;
       this.chatbotId = chatbotId;
       this.sessionId = utils.generateSessionId();
+      this.isOnline = navigator.onLine;
+      this.lastSuccessfulUrl = this.apiUrl;
+      
+      // Listen for online/offline events
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        logger.info('Connection restored');
+      });
+      
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+        logger.warn('Connection lost');
+      });
     }
 
-    async request({ endpoint, method = 'GET', data = null }) {
-      const url = `${this.apiUrl}${endpoint}`;
+    // Enhanced request method with retry and fallback logic
+    async request({ endpoint, method = 'GET', data = null, attempt = 0 }) {
+      if (!this.isOnline && !CONFIG.fallbackEnabled) {
+        throw new Error('No internet connection');
+      }
+
+      const currentUrl = attempt === 0 ? this.lastSuccessfulUrl : 
+                        (this.lastSuccessfulUrl === this.apiUrl ? this.fallbackApiUrl : this.apiUrl);
+      
+      const url = `${currentUrl}${endpoint}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.requestTimeout);
+
       const options = {
         method,
         headers: utils.getCorsHeaders(),
         mode: 'cors',
         credentials: 'omit',
+        signal: controller.signal
       };
 
       if (data && method !== 'GET') {
         options.body = JSON.stringify(data);
       }
 
-      const response = await fetch(url, options);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      try {
+        logger.debug(`Making request to: ${url} (attempt ${attempt + 1})`);
+        
+        const response = await fetch(url, options);
+        clearTimeout(timeoutId);
 
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        if (!response.ok) {
+          const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+          error.status = response.status;
+          throw error;
+        }
+
+        // Update last successful URL
+        this.lastSuccessfulUrl = currentUrl;
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json();
+        }
+        
+        return await response.text();
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        logger.debug(`Request failed: ${error.message}`);
+        
+        // Handle abort errors
+        if (error.name === 'AbortError') {
+          error.message = 'Request timeout';
+        }
+
+        // Retry logic
+        if (utils.shouldRetry(error, attempt)) {
+          logger.debug(`Retrying request (attempt ${attempt + 1}/${CONFIG.maxRetries})`);
+          await utils.delay(CONFIG.retryDelay * (attempt + 1));
+          return this.request({ endpoint, method, data, attempt: attempt + 1 });
+        }
+
+        // If all retries failed, throw the original error
+        throw error;
       }
-      
-      return await response.text();
     }
 
     async getChatbotInfo() {
-      return await this.request({
-        endpoint: `/api/chatbot/${this.chatbotId}`,
-        method: 'GET'
-      });
+      try {
+        return await this.request({
+          endpoint: `/api/chatbot/${this.chatbotId}`,
+          method: 'GET'
+        });
+      } catch (error) {
+        logger.error('Failed to load chatbot config, using defaults:', error);
+        
+        // Return fallback configuration
+        return {
+          name: 'Assistant',
+          welcomeMessage: 'Hi! How can I help you today?',
+          primaryColor: '#2563eb',
+          placeholder: 'Type your message...',
+          showBranding: true
+        };
+      }
     }
 
     async sendMessage({ message }) {
+      if (!this.isOnline && !CONFIG.fallbackEnabled) {
+        return this.getFallbackResponse(message);
+      }
+
       try {
         const response = await this.request({
           endpoint: '/api/chat',
@@ -169,31 +283,114 @@
         }
         
         throw new Error('Invalid response format');
+        
       } catch (error) {
-        console.error('Failed to send message:', error);
-        throw error; // Re-throw to handle in the calling code
+        logger.error('Failed to send message:', error);
+        
+        // Return intelligent fallback response
+        return this.getFallbackResponse(message);
       }
+    }
+
+    // Intelligent fallback responses
+    getFallbackResponse(message) {
+      const responses = {
+        greeting: [
+          "Hello! I'm currently experiencing some connection issues, but I'm here to help. What can I assist you with?",
+          "Hi there! While I reconnect to my servers, feel free to tell me what you're looking for.",
+          "Welcome! I'm having some technical difficulties at the moment, but I'd still like to help you."
+        ],
+        question: [
+          "That's a great question! I'm currently unable to access my full knowledge base due to a connection issue, but I'll do my best to help once I'm back online.",
+          "I understand you're looking for information. I'm experiencing some connectivity issues right now, but please feel free to continue our conversation.",
+          "Thank you for your question. I'm temporarily offline but will respond as soon as my connection is restored."
+        ],
+        support: [
+          "I see you need assistance. While I'm reconnecting to my systems, you might find helpful information in our FAQ section or contact our support team directly.",
+          "I'm here to help! Currently experiencing some technical issues, but I'll be back to full functionality shortly.",
+          "Thanks for reaching out. I'm having connectivity issues but will assist you as soon as possible."
+        ],
+        default: [
+          "I apologize, but I'm currently experiencing connection issues. I'm working to restore full functionality and will be back to help you shortly.",
+          "Thank you for your message. I'm temporarily unable to connect to my servers, but I'll respond as soon as the connection is restored.",
+          "I'm currently offline due to technical issues, but I appreciate your patience. Please try again in a few moments."
+        ]
+      };
+
+      const messageType = this.classifyMessage(message);
+      const responseArray = responses[messageType] || responses.default;
+      const randomResponse = responseArray[Math.floor(Math.random() * responseArray.length)];
+      
+      return { 
+        message: randomResponse, 
+        success: false, 
+        fallback: true,
+        retryable: true
+      };
+    }
+
+    classifyMessage(message) {
+      const lowerMessage = message.toLowerCase();
+      
+      if (lowerMessage.match(/\b(hi|hello|hey|good morning|good afternoon|good evening)\b/)) {
+        return 'greeting';
+      }
+      
+      if (lowerMessage.includes('?') || lowerMessage.match(/\b(what|how|when|where|why|who|can you)\b/)) {
+        return 'question';
+      }
+      
+      if (lowerMessage.match(/\b(help|support|problem|issue|error|trouble)\b/)) {
+        return 'support';
+      }
+      
+      return 'default';
     }
   }
 
-  // Message Manager with local storage
+  // Enhanced Message Manager with error handling and retry queue
   class MessageManager {
     constructor(sessionId) {
       this.messages = [];
       this.sessionId = sessionId;
       this.storageKey = `chatit-messages-${sessionId}`;
+      this.retryQueue = [];
+      this.maxRetryQueueSize = 50;
     }
 
-    add({ content, sender, timestamp = Date.now() }) {
+    add({ content, sender, timestamp = Date.now(), fallback = false, retryable = false }) {
       const message = {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         content: utils.sanitize(content), 
         sender, 
-        timestamp
+        timestamp,
+        fallback,
+        retryable
       };
       this.messages.push(message);
       this.save();
       return message;
+    }
+
+    addToRetryQueue(message) {
+      if (this.retryQueue.length >= this.maxRetryQueueSize) {
+        this.retryQueue.shift(); // Remove oldest
+      }
+      this.retryQueue.push({
+        ...message,
+        retryCount: (message.retryCount || 0) + 1,
+        retryTimestamp: Date.now()
+      });
+      this.saveRetryQueue();
+    }
+
+    getRetryQueue() {
+      return [...this.retryQueue];
+    }
+
+    clearRetryQueue() {
+      this.retryQueue = [];
+      this.saveRetryQueue();
     }
 
     getAll() {
@@ -204,7 +401,15 @@
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
       } catch (e) {
-        console.warn('Failed to save messages:', e);
+        logger.warn('Failed to save messages:', e);
+      }
+    }
+
+    saveRetryQueue() {
+      try {
+        localStorage.setItem(`${this.storageKey}-retry`, JSON.stringify(this.retryQueue));
+      } catch (e) {
+        logger.warn('Failed to save retry queue:', e);
       }
     }
 
@@ -214,9 +419,30 @@
         if (saved) {
           this.messages = JSON.parse(saved);
         }
+        
+        const retryQueue = localStorage.getItem(`${this.storageKey}-retry`);
+        if (retryQueue) {
+          this.retryQueue = JSON.parse(retryQueue);
+        }
       } catch (e) {
-        console.warn('Failed to load messages:', e);
+        logger.warn('Failed to load messages:', e);
         this.messages = [];
+        this.retryQueue = [];
+      }
+    }
+
+    // Mark fallback messages as resolved when real response arrives
+    resolveFallbackMessage(originalMessageId, realResponse) {
+      const messageIndex = this.messages.findIndex(msg => msg.id === originalMessageId);
+      if (messageIndex !== -1 && this.messages[messageIndex].fallback) {
+        this.messages[messageIndex] = {
+          ...this.messages[messageIndex],
+          content: realResponse,
+          fallback: false,
+          resolved: true,
+          resolvedAt: Date.now()
+        };
+        this.save();
       }
     }
   }
@@ -468,11 +694,96 @@
           margin-left: 8px;
         }
 
+        .chatit-message-meta {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 4px;
+          justify-content: flex-end;
+        }
+
+        .chatit-message.bot .chatit-message-meta {
+          justify-content: flex-start;
+        }
+
         .chatit-message-time {
           font-size: 11px;
           opacity: 0.6;
-          margin-top: 4px;
+        }
+
+        .offline-indicator {
+          font-size: 12px;
+          color: #f59e0b;
+          cursor: help;
+          animation: pulse 2s infinite;
+        }
+
+        .retry-button {
+          background: none;
+          border: 1px solid #d1d5db;
+          border-radius: 50%;
+          width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 10px;
+          color: #6b7280;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+
+        .retry-button:hover {
+          background-color: #f3f4f6;
+          color: #374151;
+          transform: rotate(180deg);
+        }
+
+        .fallback-message .chatit-message-content {
+          border-left: 3px solid #f59e0b;
+          padding-left: 12px;
+          background-color: rgba(251, 191, 36, 0.1);
+        }
+
+        .retryable-message.user .chatit-message-content {
+          border-left: 3px solid #ef4444;
+          padding-left: 12px;
+          background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .chatit-connection-status {
+          padding: 8px 12px;
+          margin: 8px 16px;
+          border-radius: 6px;
+          font-size: 12px;
           text-align: center;
+          display: none;
+          transition: all 0.3s ease;
+        }
+
+        .chatit-connection-status.offline {
+          background-color: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fbbf24;
+          display: block;
+        }
+
+        .chatit-connection-status.online {
+          background-color: #d1fae5;
+          color: #065f46;
+          border: 1px solid #34d399;
+          display: block;
+          animation: slideIn 0.3s ease;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         .chatit-typing {
@@ -928,14 +1239,43 @@
       const messagesContainer = this.container.querySelector('.chatit-messages');
       const messageEl = document.createElement('div');
       messageEl.className = `chatit-message ${message.sender}`;
+      messageEl.setAttribute('data-message-id', message.id);
       
+      // Add classes for fallback and retryable messages
+      if (message.fallback) {
+        messageEl.classList.add('fallback-message');
+      }
+      if (message.retryable) {
+        messageEl.classList.add('retryable-message');
+      }
+
+      const timeString = utils.formatTime(message.timestamp);
+      const statusIcon = message.fallback ? '<span class="offline-indicator" title="Offline response">⚡</span>' : '';
+      const retryButton = message.retryable && message.sender === 'user' ? 
+        '<button class="retry-button" onclick="window.retryMessage(\'' + message.id + '\')" title="Retry message">↻</button>' : '';
+
       messageEl.innerHTML = `
         <div class="chatit-message-content">${message.content}</div>
-        <div class="chatit-message-time">${utils.formatTime(message.timestamp)}</div>
+        <div class="chatit-message-meta">
+          <span class="chatit-message-time">${timeString}</span>
+          ${statusIcon}
+          ${retryButton}
+        </div>
       `;
       
       messagesContainer.appendChild(messageEl);
       this.scrollToBottom();
+
+      // Add animation
+      messageEl.style.opacity = '0';
+      messageEl.style.transform = 'translateY(10px)';
+      requestAnimationFrame(() => {
+        messageEl.style.transition = 'all 0.3s ease';
+        messageEl.style.opacity = '1';
+        messageEl.style.transform = 'translateY(0)';
+      });
+
+      return messageEl;
     }
 
     showTyping() {
@@ -1010,8 +1350,8 @@
         return;
       }
 
-      this.config = { ...CONFIG.defaults, ...customConfig, chatbotId };
-      this.api = new APIManager({ apiUrl: apiUrl || CONFIG.apiUrl, chatbotId });
+      this.config = { ...CONFIG, ...customConfig, chatbotId };
+      this.api = new APIManager({ apiUrl: apiUrl || CONFIG.defaultApiUrl, chatbotId });
       this.messages = new MessageManager(this.api.sessionId);
       this.ui = new UIManager({ config: this.config });
       
@@ -1079,15 +1419,19 @@
       }
     }
 
-    async sendMessage(messageText) {
+    async sendMessage(messageText, isRetry = false) {
       if (!messageText.trim()) return;
 
-      // Add user message to UI
-      const userMessage = this.messages.add({
-        content: messageText,
-        sender: 'user'
-      });
-      this.ui.showMessage(userMessage);
+      let userMessage;
+      if (!isRetry) {
+        // Add user message to UI
+        userMessage = this.messages.add({
+          content: messageText,
+          sender: 'user',
+          retryable: true
+        });
+        this.ui.showMessage(userMessage);
+      }
 
       // Show typing indicator
       this.ui.showTyping();
@@ -1103,19 +1447,77 @@
           // Add AI response to UI
           const botMessage = this.messages.add({
             content: response.message,
-            sender: 'bot'
+            sender: 'bot',
+            fallback: response.fallback || false,
+            retryable: response.retryable || false
           });
           this.ui.showMessage(botMessage);
+
+          // If this was a retry of a failed message, update the retry queue
+          if (isRetry && userMessage) {
+            this.messages.clearRetryQueue();
+          }
+
+          // Dispatch message event for analytics
+          window.dispatchEvent(new CustomEvent('chatit-widget-message', {
+            detail: { 
+              chatbotId: this.config.chatbotId,
+              message: messageText,
+              response: response.message,
+              fallback: response.fallback || false
+            }
+          }));
         } else {
-          throw new Error('No response from AI');
+          throw new Error('Invalid response format');
         }
         
       } catch (error) {
-        console.error('Failed to get AI response:', error);
+        logger.error('Failed to get AI response:', error);
         this.ui.hideTyping();
         
-        // Show error message
-        this.ui.showError('Sorry, I\'m having trouble connecting to the server. Please try again later.');
+        // For network/CORS errors, show a more helpful message
+        if (utils.isNetworkError(error) || utils.isCorsError(error)) {
+          const fallbackResponse = this.api.getFallbackResponse(messageText);
+          const botMessage = this.messages.add({
+            content: fallbackResponse.message,
+            sender: 'bot',
+            fallback: true,
+            retryable: true
+          });
+          this.ui.showMessage(botMessage);
+          
+          // Add original message to retry queue if not already there
+          if (userMessage && !isRetry) {
+            this.messages.addToRetryQueue(userMessage);
+          }
+        } else {
+          // For other errors, show a generic error message
+          this.ui.showError('Sorry, I\'m having trouble right now. Please try again later.');
+        }
+      }
+    }
+
+    // Method to retry failed messages
+    retryMessage(messageId) {
+      const retryQueue = this.messages.getRetryQueue();
+      const messageToRetry = retryQueue.find(msg => msg.id === messageId);
+      
+      if (messageToRetry) {
+        logger.info('Retrying message:', messageToRetry.content);
+        this.sendMessage(messageToRetry.content, true);
+      }
+    }
+
+    // Method to retry all failed messages
+    retryAllFailedMessages() {
+      const retryQueue = this.messages.getRetryQueue();
+      if (retryQueue.length > 0) {
+        logger.info(`Retrying ${retryQueue.length} failed messages`);
+        retryQueue.forEach(message => {
+          setTimeout(() => {
+            this.sendMessage(message.content, true);
+          }, Math.random() * 1000); // Stagger retries
+        });
       }
     }
 
@@ -1145,6 +1547,16 @@
     }
   }
 
+  // Global retry function for message retry buttons
+  window.retryMessage = function(messageId) {
+    const widgets = document.querySelectorAll('[data-chatit-widget]');
+    widgets.forEach(element => {
+      if (element.chatItWidget) {
+        element.chatItWidget.retryMessage(messageId);
+      }
+    });
+  };
+
   // Auto-initialization for embedded widgets
   function initializeWidgets() {
     const widgets = document.querySelectorAll('[data-chatit-widget]');
@@ -1167,7 +1579,7 @@
             if (attr === 'showBranding') {
               customConfig[attr] = value === 'true';
             } else if (attr === 'borderRadius') {
-              customConfig[attr] = parseInt(value, 10) || CONFIG.defaults[attr];
+              customConfig[attr] = parseInt(value, 10) || CONFIG.borderRadius;
             } else {
               customConfig[attr] = value;
             }
@@ -1182,9 +1594,23 @@
 
         // Store reference
         element.chatItWidget = widget;
+        element.dataset.initialized = 'true';
       }
     });
   }
+
+  // Auto-retry failed messages when connection is restored
+  window.addEventListener('online', () => {
+    logger.info('Connection restored, attempting to retry failed messages');
+    setTimeout(() => {
+      const widgets = document.querySelectorAll('[data-chatit-widget]');
+      widgets.forEach(element => {
+        if (element.chatItWidget) {
+          element.chatItWidget.retryAllFailedMessages();
+        }
+      });
+    }, 2000); // Wait 2 seconds before retrying
+  });
 
   // Initialize widgets when DOM is ready
   if (document.readyState === 'loading') {
