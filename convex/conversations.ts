@@ -241,18 +241,17 @@ export const sendMessageInternal = internalMutation({
       return "I'm sorry, I couldn't process your request.";
     }
 
-    // Generate intelligent response immediately using Convex AI
-    const response: string = await ctx.runQuery(internal.ai.generateIntelligentResponse, {
+    // Get chatbot data for AI response
+    const chatbot = await ctx.db.get(conversation.chatbotId);
+    
+    // Generate intelligent response immediately using instruction-based processing
+    const response: string = await ctx.runQuery(internal.ai.processInstructionBasedResponse, {
       userMessage: args.content,
-      chatbotId: conversation.chatbotId,
-      conversationHistory: [], // Simple case for mutation
-      chatbotData: {
-        name: "AI Assistant", // Default for mutation context
-        description: "a helpful AI assistant", 
-        instructions: "Be helpful, friendly, and professional in your responses.",
-        language: "en",
-        welcomeMessage: undefined,
-      },
+      chatbotInstructions: chatbot?.instructions || "Be helpful and friendly",
+      chatbotName: chatbot?.name || "AI Assistant",
+      chatbotDescription: chatbot?.description || "A helpful AI assistant",
+      conversationHistory: [], // Simple case for immediate response
+      useAdvancedProcessing: true,
     });
     
     // Insert AI response
