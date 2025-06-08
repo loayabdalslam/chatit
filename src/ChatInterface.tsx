@@ -35,16 +35,6 @@ export function ChatInterface({ chatbotId }: ChatInterfaceProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Stop loading when we get a new assistant message
-  useEffect(() => {
-    if (!isLoading || !messages) return;
-
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.role === "assistant") {
-      setIsLoading(false);
-    }
-  }, [messages, isLoading]);
-
   const handleStartNewChat = async () => {
     try {
       const newConversationId = await createConversation({
@@ -71,7 +61,7 @@ export function ChatInterface({ chatbotId }: ChatInterfaceProps) {
         content: messageText,
       });
       
-      // Don't show success toast, just wait for response
+      setIsLoading(false);
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message. Please try again.");

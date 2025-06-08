@@ -35,32 +35,13 @@ export const handleChatMessage = internalAction({
         throw new Error("Failed to create conversation");
       }
 
-      // Insert user message
-      const userMessageId = await ctx.runMutation(internal.chat.insertUserMessage, {
+      // Use the same approach as conversations.ts - call sendMessageInternal
+      const aiResponse = await ctx.runMutation(internal.conversations.sendMessageInternal, {
         conversationId: conversation._id,
         content: args.message,
       });
 
-      // Generate AI response using the new intelligent mock system
-      const aiResponseData = await ctx.runQuery(internal.ai.generateResponseSync, {
-        userMessage: args.message,
-        chatbotId: args.chatbotId,
-      });
-      
-      const aiResponse = aiResponseData.response;
-
-      // Insert AI response
-      await ctx.runMutation(internal.chat.insertAIMessage, {
-        conversationId: conversation._id,
-        content: aiResponse,
-      });
-
-      // Trigger sentiment analysis for user message (async)
-      await ctx.scheduler.runAfter(0, internal.sentiment.analyzeSentiment, {
-        conversationId: conversation._id,
-        messageId: userMessageId,
-        messageContent: args.message,
-      });
+      // Sentiment analysis is already handled in sendMessageInternal
 
       return aiResponse;
       
