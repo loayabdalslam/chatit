@@ -19,8 +19,7 @@ type Page =
   | "detailed-dashboard"
   | "reports"
   | "conversations"
-  | "referrals"
-  | "debug";
+  | "referrals";
 
 interface SidebarProps {
   currentPage: Page;
@@ -51,7 +50,6 @@ export function Sidebar({
     { id: "analytics", label: "Analytics", icon: "📈" },
     { id: "referrals", label: "Referrals", icon: "🎁" },
     { id: "subscription", label: "Subscription", icon: "💳" },
-    { id: "debug", label: "Debug", icon: "🔧" },
   ];
 
   const quickActions = [

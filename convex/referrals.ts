@@ -55,11 +55,15 @@ export const processReferral = mutation({
       throw new Error("Not authenticated");
     }
 
+    console.log("Processing referral for user:", userId, "with code:", args.referralCode);
+
     // Find the referrer by referral code
     const referrer = await ctx.db
       .query("users")
       .withIndex("by_referral_code", (q) => q.eq("referralCode", args.referralCode))
       .first();
+
+    console.log("Found referrer:", referrer ? referrer._id : "Not found");
 
     if (!referrer) {
       throw new Error("Invalid referral code");
@@ -76,18 +80,22 @@ export const processReferral = mutation({
       .withIndex("by_referred_user", (q) => q.eq("referredUserId", userId))
       .first();
 
+    console.log("Existing referral:", existingReferral ? "Found" : "None");
+
     if (existingReferral) {
       throw new Error("User has already been referred");
     }
 
     // Create referral record (without subscription ID initially)
-    await ctx.db.insert("referrals", {
+    const referralId = await ctx.db.insert("referrals", {
       referrerId: referrer._id,
       referredUserId: userId,
       status: "pending",
       commission: 0, // Will be updated when subscription is created
       createdAt: Date.now(),
     });
+
+    console.log("Created referral record:", referralId);
 
     return null;
   },
@@ -281,48 +289,40 @@ export const validateReferralCode = query({
   },
 });
 
-// Test function to debug referral system
-export const testReferralSystem = query({
+// Get all referrals in the system (for debugging)
+export const getAllReferrals = query({
   args: {},
-  returns: v.object({
-    allUsers: v.array(v.object({
-      _id: v.id("users"),
-      name: v.optional(v.string()),
-      email: v.optional(v.string()),
-      referralCode: v.optional(v.string()),
-    })),
-    allReferrals: v.array(v.object({
-      _id: v.id("referrals"),
-      referrerId: v.id("users"),
-      referredUserId: v.id("users"),
-      status: v.string(),
-      commission: v.number(),
-      createdAt: v.number(),
-    })),
-  }),
+  returns: v.array(v.object({
+    _id: v.id("referrals"),
+    referrerId: v.id("users"),
+    referredUserId: v.id("users"),
+    status: v.string(),
+    commission: v.number(),
+    createdAt: v.number(),
+    referrerEmail: v.optional(v.string()),
+    referredUserEmail: v.optional(v.string()),
+  })),
   handler: async (ctx) => {
-    const users = await ctx.db.query("users").collect();
     const referrals = await ctx.db.query("referrals").collect();
     
-    const simplifiedUsers = users.map(user => ({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      referralCode: user.referralCode,
-    }));
+    const enrichedReferrals = await Promise.all(
+      referrals.map(async (referral) => {
+        const referrer = await ctx.db.get(referral.referrerId);
+        const referredUser = await ctx.db.get(referral.referredUserId);
+        
+        return {
+          _id: referral._id,
+          referrerId: referral.referrerId,
+          referredUserId: referral.referredUserId,
+          status: referral.status,
+          commission: referral.commission,
+          createdAt: referral.createdAt,
+          referrerEmail: referrer?.email,
+          referredUserEmail: referredUser?.email,
+        };
+      })
+    );
     
-    const simplifiedReferrals = referrals.map(referral => ({
-      _id: referral._id,
-      referrerId: referral.referrerId,
-      referredUserId: referral.referredUserId,
-      status: referral.status,
-      commission: referral.commission,
-      createdAt: referral.createdAt,
-    }));
-    
-    return {
-      allUsers: simplifiedUsers,
-      allReferrals: simplifiedReferrals,
-    };
+    return enrichedReferrals;
   },
 }); 

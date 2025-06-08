@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 export function ReferralsDashboard() {
   const referralStats = useQuery(api.referrals.getReferralStats);
+  const allReferrals = useQuery(api.referrals.getAllReferrals);
   const generateReferralCode = useMutation(api.referrals.generateReferralCode);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -288,6 +289,71 @@ export function ReferralsDashboard() {
             <div className="text-xs text-gray-500 mt-1">Earn as long as they subscribe</div>
           </div>
         </div>
+      </div>
+
+      {/* Debug Section - All Referrals in System */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-black mb-4">System Debug - All Referrals</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          This shows all referrals in the system to help debug the referral connection.
+        </p>
+        
+        {allReferrals && allReferrals.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-2 font-medium text-gray-900">Referrer</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-900">Referred User</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-900">Status</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-900">Commission</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-900">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allReferrals.map((referral) => (
+                  <tr key={referral._id} className="border-b border-gray-100">
+                    <td className="py-2 px-2">
+                      <div className="text-xs">
+                        <div className="font-medium">{referral.referrerEmail || "Unknown"}</div>
+                        <div className="text-gray-500">ID: {referral.referrerId.slice(-8)}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-2">
+                      <div className="text-xs">
+                        <div className="font-medium">{referral.referredUserEmail || "Unknown"}</div>
+                        <div className="text-gray-500">ID: {referral.referredUserId.slice(-8)}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        referral.status === 'completed' || referral.status === 'paid'
+                          ? 'bg-black text-white' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {referral.status}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-xs font-medium">
+                      {formatCurrency(referral.commission)}
+                    </td>
+                    <td className="py-2 px-2 text-xs">
+                      {formatDate(referral.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-2xl mb-2">🔍</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No Referrals Found</h4>
+            <p className="text-gray-600">
+              No referrals have been processed yet. Try using a referral code during signup to test the system.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
