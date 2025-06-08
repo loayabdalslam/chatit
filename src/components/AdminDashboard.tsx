@@ -14,8 +14,12 @@ export function AdminDashboard({ sessionId, onLogout }: AdminDashboardProps) {
   const analytics = useQuery(api.admin.getAnalyticsDashboard, { sessionId });
   const allUsers = useQuery(api.admin.getAllUsersForAdminDashboard, { sessionId });
   const contactMessages = useQuery(api.admin.getContactMessages, { sessionId });
+  const paymentProofs = useQuery(api.payments.getAllPaymentProofs, {});
+  const paymentStats = useQuery(api.payments.getPaymentStats, {});
   const adminLogout = useMutation(api.admin.adminLogout);
   const updateMessageStatus = useMutation(api.admin.updateContactMessageStatus);
+  const verifyPaymentProof = useMutation(api.payments.verifyPaymentProof);
+  const rejectPaymentProof = useMutation(api.payments.rejectPaymentProof);
 
   const handleLogout = async () => {
     try {
@@ -35,6 +39,24 @@ export function AdminDashboard({ sessionId, onLogout }: AdminDashboardProps) {
       toast.success("Message updated successfully");
     } catch (error) {
       toast.error("Failed to update message");
+    }
+  };
+
+  const handleVerifyPayment = async (paymentProofId: string, adminNotes?: string) => {
+    try {
+      await verifyPaymentProof({ paymentProofId, adminNotes });
+      toast.success("Payment verified and subscription activated!");
+    } catch (error) {
+      toast.error("Failed to verify payment");
+    }
+  };
+
+  const handleRejectPayment = async (paymentProofId: string, rejectionReason: string, adminNotes?: string) => {
+    try {
+      await rejectPaymentProof({ paymentProofId, rejectionReason, adminNotes });
+      toast.success("Payment rejected");
+    } catch (error) {
+      toast.error("Failed to reject payment");
     }
   };
 
@@ -97,6 +119,7 @@ export function AdminDashboard({ sessionId, onLogout }: AdminDashboardProps) {
               { id: "users", label: "Users", icon: "👥" },
               { id: "analytics", label: "Analytics", icon: "📈" },
               { id: "contact", label: "Contact Messages", icon: "💬" },
+              { id: "payments", label: "Payment Verification", icon: "💳" },
               { id: "performance", label: "Performance", icon: "⚡" },
             ].map((tab) => (
               <button
@@ -419,6 +442,184 @@ export function AdminDashboard({ sessionId, onLogout }: AdminDashboardProps) {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "payments" && (
+          <div className="space-y-6">
+            {/* Payment Stats */}
+            {paymentStats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <span className="text-blue-600 text-xl">📊</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Submissions</p>
+                      <p className="text-2xl font-bold text-gray-900">{paymentStats.total}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <span className="text-yellow-600 text-xl">⏳</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Pending</p>
+                      <p className="text-2xl font-bold text-gray-900">{paymentStats.pending}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <span className="text-green-600 text-xl">✅</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Verified</p>
+                      <p className="text-2xl font-bold text-gray-900">{paymentStats.verified}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <span className="text-red-600 text-xl">❌</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Rejected</p>
+                      <p className="text-2xl font-bold text-gray-900">{paymentStats.rejected}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <span className="text-purple-600 text-xl">💰</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(paymentStats.totalRevenue)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Proofs Table */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">Payment Verification</h2>
+                <p className="text-sm text-gray-600">Review and verify user payment submissions</p>
+              </div>
+              <div className="overflow-x-auto">
+                {paymentProofs && paymentProofs.length > 0 ? (
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paymentProofs.map((proof) => (
+                        <tr key={proof._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                <span className="text-xs font-medium text-gray-600">
+                                  {proof.userName?.charAt(0) || proof.userEmail?.charAt(0) || "?"}
+                                </span>
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900">{proof.userName || "Unknown"}</p>
+                                <p className="text-xs text-gray-500">{proof.userEmail}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 capitalize">
+                              {proof.plan}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(proof.amount)} {proof.currency}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                            {proof.paymentMethod.replace('_', ' ')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              proof.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              proof.status === 'verified' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {proof.status.charAt(0).toUpperCase() + proof.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(proof.submittedAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {proof.status === 'pending' ? (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleVerifyPayment(proof._id)}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  Verify
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const reason = prompt("Rejection reason:");
+                                    if (reason) handleRejectPayment(proof._id, reason);
+                                  }}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Reject
+                                </button>
+                                {proof.proofImageId && (
+                                  <button
+                                    onClick={() => {
+                                      // This would need to be implemented to show the image
+                                      window.open(`/api/storage/${proof.proofImageId}`, '_blank');
+                                    }}
+                                    className="text-blue-600 hover:text-blue-900"
+                                  >
+                                    View Proof
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-500">
+                                {proof.status === 'verified' ? 'Verified' : 'Rejected'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-12 text-center">
+                    <div className="text-gray-400 text-4xl mb-4">💳</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Payment Submissions</h3>
+                    <p className="text-gray-600">No payment proofs have been submitted yet.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

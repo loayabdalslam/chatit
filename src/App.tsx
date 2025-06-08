@@ -21,6 +21,7 @@ import { ConversationHistory } from "./components/ConversationHistory";
 import { ReferralsDashboard } from "./components/ReferralsDashboard";
 import { ContactUs } from "./components/ContactUs";
 import { SuperAdmin } from "./components/SuperAdmin";
+import { PricingPage } from "./components/PricingPage";
 import { Sidebar } from "./components/Sidebar";
 import { MessageLimitBanner } from "./components/MessageLimitBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -46,7 +47,8 @@ type Page =
   | "conversations"
   | "referrals"
   | "contact"
-  | "super-admin";
+  | "super-admin"
+  | "payment";
 
 // Check if we're in widget mode - handle both /widget/ID and just /ID patterns
 const checkWidgetRoute = () => {
@@ -218,6 +220,8 @@ function AppContent() {
         return <ContactUs />;
       case "super-admin":
         return <SuperAdmin />;
+      case "payment":
+        return <PricingPage />;
       default:
         return <Dashboard />;
     }

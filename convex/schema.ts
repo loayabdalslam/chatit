@@ -207,6 +207,28 @@ const applicationTables = {
     userAgent: v.optional(v.string()),
   }).index("by_session_id", ["sessionId"])
     .index("by_expires_at", ["expiresAt"]),
+
+  paymentProofs: defineTable({
+    userId: v.id("users"),
+    plan: v.string(), // "standard", "premium", "enterprise"
+    amount: v.number(),
+    currency: v.string(),
+    paymentMethod: v.string(), // "bank_transfer", "mobile_money", "crypto", "other"
+    proofImageId: v.optional(v.id("_storage")), // Screenshot of payment
+    transactionId: v.optional(v.string()),
+    paymentDate: v.optional(v.number()),
+    status: v.string(), // "pending", "verified", "rejected"
+    notes: v.optional(v.string()), // User notes about payment
+    adminNotes: v.optional(v.string()), // Admin notes for verification
+    submittedAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+    verifiedBy: v.optional(v.id("users")),
+    rejectedAt: v.optional(v.number()),
+    rejectedBy: v.optional(v.id("users")),
+    rejectionReason: v.optional(v.string()),
+  }).index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_submitted_at", ["submittedAt"]),
 };
 
 export default defineSchema({

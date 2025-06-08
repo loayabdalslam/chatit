@@ -19,7 +19,10 @@ type Page =
   | "detailed-dashboard"
   | "reports"
   | "conversations"
-  | "referrals";
+  | "referrals"
+  | "contact"
+  | "super-admin"
+  | "payment";
 
 interface SidebarProps {
   currentPage: Page;
@@ -50,6 +53,7 @@ export function Sidebar({
     { id: "analytics", label: "Analytics", icon: "📈" },
     { id: "referrals", label: "Referrals", icon: "🎁" },
     { id: "subscription", label: "Subscription", icon: "💳" },
+    { id: "payment", label: "Pricing & Payment", icon: "💰" },
   ];
 
   const quickActions = [
