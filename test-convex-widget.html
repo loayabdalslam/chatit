@@ -3,362 +3,682 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real AI ChatIt Widget - Convex Integration</title>
+    <title>ChatIt Widget - Direct Convex Integration Test</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
+            background: #f5f5f5;
+            line-height: 1.6;
         }
-
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        h1 {
-            color: #2d3748;
-            margin-bottom: 10px;
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .header h1 {
+            color: #1f2937;
+            margin: 0 0 10px 0;
             font-size: 2.5rem;
-            font-weight: 700;
         }
-
-        .subtitle {
-            color: #718096;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
         }
-
-        .demo-section {
-            margin-bottom: 30px;
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .test-section {
+            background: #f9fafb;
             padding: 25px;
-            background: #f7fafc;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
         }
-
-        .demo-section h2 {
-            color: #2d3748;
-            margin-bottom: 15px;
-            font-size: 1.4rem;
+        .test-section h3 {
+            margin: 0 0 20px 0;
+            color: #1f2937;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
-        .features-list {
-            list-style: none;
-            padding: 0;
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6b7280;
+            display: inline-block;
         }
-
-        .features-list li {
-            padding: 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .status-indicator.online {
+            background: #10b981;
+            animation: pulse 2s infinite;
         }
-
-        .features-list li::before {
-            content: "✅";
-            font-size: 16px;
+        .status-indicator.offline {
+            background: #ef4444;
         }
-
-        .highlight {
-            background: #fef5e7;
-            padding: 15px;
-            border-left: 4px solid #ed8936;
-            border-radius: 4px;
-            margin: 15px 0;
+        .status-indicator.testing {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
         }
-
-        .success {
-            background: #f0fff4;
-            border-left-color: #48bb78;
-            color: #22543d;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-
-        .warning {
-            background: #fffaf0;
-            border-left-color: #ed8936;
-            color: #744210;
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+            transition: background 0.2s;
         }
-
-        .code-block {
-            background: #2d3748;
-            color: #e2e8f0;
+        .test-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        .test-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .test-button.success {
+            background: #10b981;
+        }
+        .test-button.error {
+            background: #ef4444;
+        }
+        .log-container {
+            background: #111827;
+            color: #f9fafb;
             padding: 20px;
             border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
-            overflow-x: auto;
-            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
         }
-
-        .status-badge {
-            display: inline-block;
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-entry.debug { color: #9ca3af; }
+        .log-entry.info { color: #60a5fa; }
+        .log-entry.success { color: #34d399; }
+        .log-entry.warning { color: #fbbf24; }
+        .log-entry.error { color: #f87171; }
+        .widget-configs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .config-section {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+        .config-section h4 {
+            margin: 0 0 15px 0;
+            color: #374151;
+        }
+        .clear-logs {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .clear-logs:hover {
+            background: #4b5563;
+        }
+        .environment-info {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .environment-info strong {
+            color: #047857;
+        }
+        .api-test-results {
+            margin-top: 15px;
+            padding: 15px;
+            background: #ffffff;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-status {
             padding: 4px 8px;
-            border-radius: 12px;
+            border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
         }
-
-        .status-online {
+        .result-status.success {
             background: #d1fae5;
             color: #065f46;
         }
-
-        .status-offline {
-            background: #fed7d7;
-            color: #742a2a;
+        .result-status.error {
+            background: #fee2e2;
+            color: #991b1b;
         }
-
-        #logs {
-            background: #000;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            height: 300px;
-            overflow-y: auto;
-            margin-top: 15px;
+        .result-status.pending {
+            background: #fef3c7;
+            color: #92400e;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 Real AI ChatIt Widget</h1>
-        <p class="subtitle">Direct Convex Integration • No Fallback Responses • Pure AI Power</p>
-
-        <!-- Enhanced Features -->
-        <div class="demo-section">
-            <h2>🚀 Enhanced Features</h2>
-            <ul class="features-list">
-                <li>Direct Convex backend integration</li>
-                <li>Real AI responses (no fake fallbacks)</li>
-                <li>Automatic connection health monitoring</li>
-                <li>Smart retry mechanism with visual feedback</li>
-                <li>Environment auto-detection (localhost/production)</li>
-                <li>Origin issue resolution with proper CORS</li>
-                <li>Real-time connection status indicators</li>
-                <li>Enhanced error handling and user feedback</li>
-            </ul>
+        <div class="header">
+            <h1>🤖 ChatIt Widget</h1>
+            <div class="subtitle">Direct Convex Integration Test Suite</div>
         </div>
 
-        <!-- Connection Status -->
-        <div class="demo-section">
-            <h2>📡 Connection Status</h2>
-            <p>
-                <strong>Convex Backend:</strong> 
-                <span id="convexStatus" class="status-badge status-offline">Checking...</span>
-            </p>
-            <p>
-                <strong>Environment:</strong> 
-                <span id="environment">Detecting...</span>
-            </p>
-            <p>
-                <strong>API Endpoint:</strong> 
-                <span id="apiEndpoint">Loading...</span>
-            </p>
+        <div class="environment-info">
+            <strong>Environment Auto-Detection:</strong> 
+            <span id="environment-status">Detecting...</span><br>
+            <strong>Convex URL:</strong> 
+            <span id="convex-url">Loading...</span><br>
+            <strong>Origin:</strong> 
+            <span id="origin-url"></span>
         </div>
 
-        <!-- Implementation Guide -->
-        <div class="demo-section">
-            <h2>💻 Implementation</h2>
-            
-            <h3>For Development (localhost):</h3>
-            <div class="code-block">
-&lt;!-- Auto-detects localhost and uses http://localhost:3000 --&gt;
-&lt;div data-chatit-widget="k577jnxnq9bc1y1b7k4t74rhtx7hbsqr"
-     data-welcome-message="Hi! I'm سيستم مبيعات. How can I help you today?"
-     data-primary-color="#e74c3c"&gt;
-&lt;/div&gt;
-&lt;script src="http://localhost:5173/widget.js"&gt;&lt;/script&gt;
+        <div class="test-grid">
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator" id="connection-status"></span>
+                    Connection Tests
+                </h3>
+                <button class="test-button" id="test-health">Test Health Endpoint</button>
+                <button class="test-button" id="test-cors">Test CORS Headers</button>
+                <button class="test-button" id="test-chat-endpoint">Test Chat Endpoint</button>
+                <button class="test-button" id="test-chatbot-endpoint">Test Chatbot Endpoint</button>
+                
+                <div class="api-test-results" id="api-results">
+                    <div class="result-item">
+                        <span>Health Check</span>
+                        <span class="result-status pending" id="health-result">Pending</span>
+                    </div>
+                    <div class="result-item">
+                        <span>CORS Configuration</span>
+                        <span class="result-status pending" id="cors-result">Pending</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Chat API</span>
+                        <span class="result-status pending" id="chat-result">Pending</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Chatbot Config</span>
+                        <span class="result-status pending" id="chatbot-result">Pending</span>
+                    </div>
+                </div>
             </div>
 
-            <h3>For Production:</h3>
-            <div class="code-block">
-&lt;!-- Uses production Convex URL --&gt;
-&lt;div data-chatit-widget="k577jnxnq9bc1y1b7k4t74rhtx7hbsqr"
-     data-welcome-message="Hi! I'm سيستم مبيعات. How can I help you today?"
-     data-primary-color="#e74c3c"&gt;
-&lt;/div&gt;
-&lt;script src="https://chatit.cloud/widget.js"&gt;&lt;/script&gt;
-            </div>
-
-            <h3>Custom Convex URL:</h3>
-            <div class="code-block">
-&lt;!-- Override Convex URL manually --&gt;
-&lt;div data-chatit-widget="k577jnxnq9bc1y1b7k4t74rhtx7hbsqr"
-     data-convex-url="https://your-deployment.convex.cloud"
-     data-welcome-message="Hi! I'm سيستم مبيعات. How can I help you today?"&gt;
-&lt;/div&gt;
-&lt;script src="./widget.js"&gt;&lt;/script&gt;
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator" id="widget-status"></span>
+                    Widget Tests
+                </h3>
+                <button class="test-button" id="send-test-message">Send Test Message</button>
+                <button class="test-button" id="test-error-handling">Test Error Handling</button>
+                <button class="test-button" id="test-retry-logic">Test Retry Logic</button>
+                <button class="test-button" id="simulate-network-error">Simulate Network Error</button>
             </div>
         </div>
 
-        <!-- What Changed -->
-        <div class="demo-section">
-            <h2>🔧 What Changed</h2>
-            
-            <div class="highlight success">
-                <strong>✅ Origin Issues Solved:</strong>
-                <ul>
-                    <li>Auto-detection of localhost vs production</li>
-                    <li>Proper CORS headers for Convex integration</li>
-                    <li>Environment-specific API endpoints</li>
-                </ul>
-            </div>
-
-            <div class="highlight warning">
-                <strong>⚡ Real AI Integration:</strong>
-                <ul>
-                    <li>Direct connection to Convex functions</li>
-                    <li>No fake fallback responses</li>
-                    <li>Real AI responses through your backend</li>
-                    <li>Proper error handling for connection issues</li>
-                </ul>
-            </div>
-
-            <div class="highlight">
-                <strong>🔄 Enhanced UX:</strong>
-                <ul>
-                    <li>Connection health monitoring</li>
-                    <li>Visual retry mechanisms</li>
-                    <li>Real-time status indicators</li>
-                    <li>Automatic reconnection attempts</li>
-                </ul>
-            </div>
+        <div class="log-container">
+            <button class="clear-logs" onclick="clearLogs()">Clear Logs</button>
+            <div id="log-output"></div>
         </div>
 
-        <!-- Testing Instructions -->
-        <div class="demo-section">
-            <h2>🧪 Testing Instructions</h2>
-            <ol>
-                <li><strong>Start Development Server:</strong> Run <code>npm run dev</code></li>
-                <li><strong>Open This File:</strong> Via localhost server (not file://)</li>
-                <li><strong>Check Connection:</strong> Look at status indicators above</li>
-                <li><strong>Test Chat:</strong> Use the widget in bottom-right corner</li>
-                <li><strong>Monitor Logs:</strong> Check browser console and logs below</li>
-            </ol>
-        </div>
+        <div class="widget-configs">
+            <div class="config-section">
+                <h4>Default Widget (Auto-Config)</h4>
+                <div data-chatit-widget 
+                     data-chatit-primarycolor="#3b82f6"
+                     data-chatit-title="AI Assistant"
+                     data-chatit-chatbotid="default">
+                </div>
+            </div>
 
-        <!-- Real-time Logs -->
-        <div class="demo-section">
-            <h2>📋 Real-time Logs</h2>
-            <div id="logs"></div>
+            <div class="config-section">
+                <h4>Custom Themed Widget</h4>
+                <div data-chatit-widget 
+                     data-chatit-primarycolor="#10b981"
+                     data-chatit-title="Green Bot"
+                     data-chatit-theme="dark"
+                     data-chatit-chatbotid="custom"
+                     data-chatit-borderradius="12">
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4>Production Test Widget</h4>
+                <div data-chatit-widget 
+                     data-chatit-primarycolor="#f59e0b"
+                     data-chatit-title="Production Test"
+                     data-chatit-chatbotid="production-test"
+                     data-convex-url="https://chatit.cloud">
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Real AI ChatIt Widget -->
-    <div data-chatit-widget="k577jnxnq9bc1y1b7k4t74rhtx7hbsqr"
-         data-welcome-message="Hi! I'm سيستم مبيعات. How can I help you today?"
-         data-primary-color="#e74c3c"
-         data-position="bottom-right"
-         data-animation="bounce">
-    </div>
-
-    <!-- Load the enhanced widget -->
-    <script src="./widget.js"></script>
+    <!-- Load the widget script -->
+    <script src="widget.js"></script>
 
     <script>
-        // Logging and status monitoring
-        function log(message, type = 'info') {
-            const logs = document.getElementById('logs');
-            const timestamp = new Date().toLocaleTimeString();
-            const colors = {
-                info: '#00ff00',
-                warn: '#ffaa00',
-                error: '#ff4444',
-                success: '#00ff88'
-            };
+        // Enhanced logging system
+        const log = {
+            output: document.getElementById('log-output'),
             
-            logs.innerHTML += `<span style="color: ${colors[type]}">[${timestamp}] ${message}</span>\n`;
-            logs.scrollTop = logs.scrollHeight;
+            add(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.innerHTML = `<span style="color: #6b7280;">[${timestamp}]</span> ${message}`;
+                this.output.appendChild(entry);
+                this.output.scrollTop = this.output.scrollHeight;
+            },
             
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        }
-
-        // Update status indicators
-        function updateStatus() {
-            const environment = window.location.hostname === 'localhost' ? 'Development' : 'Production';
-            const apiEndpoint = window.location.hostname === 'localhost' 
-                ? 'http://localhost:3000' 
-                : 'https://chatit.cloud';
-                
-            document.getElementById('environment').textContent = environment;
-            document.getElementById('apiEndpoint').textContent = apiEndpoint;
-            
-            // Test connection
-            fetch(apiEndpoint + '/api/health', { method: 'GET' })
-                .then(response => {
-                    if (response.ok) {
-                        document.getElementById('convexStatus').textContent = 'Connected';
-                        document.getElementById('convexStatus').className = 'status-badge status-online';
-                        log('✅ Convex backend connection successful', 'success');
-                    } else {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('convexStatus').textContent = 'Disconnected';
-                    document.getElementById('convexStatus').className = 'status-badge status-offline';
-                    log(`❌ Convex backend connection failed: ${error.message}`, 'error');
-                });
-        }
-
-        // Widget event listeners
-        window.addEventListener('chatit-widget-ready', (e) => {
-            log(`🚀 Widget initialized for chatbot: ${e.detail.chatbotId}`, 'success');
-        });
-
-        window.addEventListener('chatit-message-sent', (e) => {
-            log(`💬 Message sent: "${e.detail.message}" -> AI Response: "${e.detail.response}" (Source: ${e.detail.source})`, 'info');
-        });
-
-        // Override console.log to capture widget logs
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
-
-        console.log = function(...args) {
-            const message = args.join(' ');
-            if (message.includes('ChatIt') || message.includes('Widget') || message.includes('Convex')) {
-                log(message, 'info');
-            }
-            originalLog.apply(console, args);
+            debug(message) { this.add(`🔍 ${message}`, 'debug'); },
+            info(message) { this.add(`ℹ️ ${message}`, 'info'); },
+            success(message) { this.add(`✅ ${message}`, 'success'); },
+            warning(message) { this.add(`⚠️ ${message}`, 'warning'); },
+            error(message) { this.add(`❌ ${message}`, 'error'); }
         };
 
-        console.error = function(...args) {
-            const message = args.join(' ');
-            if (message.includes('ChatIt') || message.includes('Widget') || message.includes('Convex')) {
-                log(message, 'error');
+        function clearLogs() {
+            document.getElementById('log-output').innerHTML = '';
+        }
+
+        // Environment detection and display
+        function updateEnvironmentInfo() {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const convexUrl = isLocalhost ? 'http://localhost:3000' : 'https://chatit.cloud';
+            
+            document.getElementById('environment-status').textContent = isLocalhost ? 'Development (localhost)' : 'Production';
+            document.getElementById('convex-url').textContent = convexUrl;
+            document.getElementById('origin-url').textContent = window.location.origin;
+            
+            log.info(`Environment: ${isLocalhost ? 'Development' : 'Production'}`);
+            log.info(`Convex URL: ${convexUrl}`);
+            log.info(`Origin: ${window.location.origin}`);
+        }
+
+        // Get the Convex URL for testing
+        function getConvexUrl() {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:3000';
             }
-            originalError.apply(console, args);
+            return 'https://chatit.cloud';
+        }
+
+        // Update result status
+        function updateResult(elementId, status, message = '') {
+            const element = document.getElementById(elementId);
+            element.className = `result-status ${status}`;
+            element.textContent = status === 'success' ? 'Success' : status === 'error' ? 'Failed' : 'Pending';
+            if (message) {
+                element.title = message;
+            }
+        }
+
+        // Connection status indicator
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connection-status');
+            indicator.className = `status-indicator ${status}`;
+        }
+
+        // Widget status indicator
+        function updateWidgetStatus(status) {
+            const indicator = document.getElementById('widget-status');
+            indicator.className = `status-indicator ${status}`;
+        }
+
+        // Test functions
+        async function testHealthEndpoint() {
+            const button = document.getElementById('test-health');
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            log.info('Testing health endpoint...');
+            updateResult('health-result', 'pending');
+            
+            try {
+                const response = await fetch(`${getConvexUrl()}/api/health`, {
+                    method: 'HEAD',
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if (response.ok) {
+                    log.success('Health endpoint responded successfully');
+                    updateResult('health-result', 'success');
+                    updateConnectionStatus('online');
+                    button.className = 'test-button success';
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                log.error(`Health endpoint failed: ${error.message}`);
+                updateResult('health-result', 'error', error.message);
+                updateConnectionStatus('offline');
+                button.className = 'test-button error';
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Test Health Endpoint';
+        }
+
+        async function testCorsHeaders() {
+            const button = document.getElementById('test-cors');
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            log.info('Testing CORS configuration...');
+            updateResult('cors-result', 'pending');
+            
+            try {
+                const response = await fetch(`${getConvexUrl()}/api/health`, {
+                    method: 'OPTIONS',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const accessControlAllowOrigin = response.headers.get('Access-Control-Allow-Origin');
+                const accessControlAllowMethods = response.headers.get('Access-Control-Allow-Methods');
+                
+                log.info(`CORS Allow-Origin: ${accessControlAllowOrigin || 'Not set'}`);
+                log.info(`CORS Allow-Methods: ${accessControlAllowMethods || 'Not set'}`);
+                
+                if (response.ok || response.status === 204) {
+                    log.success('CORS headers configured correctly');
+                    updateResult('cors-result', 'success');
+                    button.className = 'test-button success';
+                } else {
+                    throw new Error(`CORS preflight failed: ${response.status}`);
+                }
+            } catch (error) {
+                log.error(`CORS test failed: ${error.message}`);
+                updateResult('cors-result', 'error', error.message);
+                button.className = 'test-button error';
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Test CORS Headers';
+        }
+
+        async function testChatEndpoint() {
+            const button = document.getElementById('test-chat-endpoint');
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            log.info('Testing chat endpoint...');
+            updateResult('chat-result', 'pending');
+            
+            try {
+                const response = await fetch(`${getConvexUrl()}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    mode: 'cors',
+                    credentials: 'omit',
+                    body: JSON.stringify({
+                        message: 'Hello, this is a test message',
+                        chatbotId: 'test',
+                        sessionId: 'test-session'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log.info(`Chat response: ${JSON.stringify(data, null, 2)}`);
+                
+                if (data.message) {
+                    log.success('Chat endpoint working correctly');
+                    updateResult('chat-result', 'success');
+                    button.className = 'test-button success';
+                } else {
+                    throw new Error('Invalid response format - missing message field');
+                }
+            } catch (error) {
+                log.error(`Chat endpoint failed: ${error.message}`);
+                updateResult('chat-result', 'error', error.message);
+                button.className = 'test-button error';
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Test Chat Endpoint';
+        }
+
+        async function testChatbotEndpoint() {
+            const button = document.getElementById('test-chatbot-endpoint');
+            button.disabled = true;
+            button.textContent = 'Testing...';
+            
+            log.info('Testing chatbot config endpoint...');
+            updateResult('chatbot-result', 'pending');
+            
+            try {
+                const response = await fetch(`${getConvexUrl()}/api/chatbot`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    mode: 'cors',
+                    credentials: 'omit',
+                    body: JSON.stringify({
+                        chatbotId: 'test'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log.info(`Chatbot config: ${JSON.stringify(data, null, 2)}`);
+                log.success('Chatbot endpoint working correctly');
+                updateResult('chatbot-result', 'success');
+                button.className = 'test-button success';
+            } catch (error) {
+                log.error(`Chatbot endpoint failed: ${error.message}`);
+                updateResult('chatbot-result', 'error', error.message);
+                button.className = 'test-button error';
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Test Chatbot Endpoint';
+        }
+
+        // Widget interaction tests
+        function sendTestMessage() {
+            const widgets = document.querySelectorAll('[data-chatit-widget]');
+            log.info(`Found ${widgets.length} widgets to test`);
+            
+            widgets.forEach((widget, index) => {
+                if (widget.chatItWidget) {
+                    log.info(`Sending test message to widget ${index + 1}`);
+                    // Simulate opening widget and sending message
+                    widget.chatItWidget.ui.open();
+                    setTimeout(() => {
+                        widget.chatItWidget.sendMessage('Hello! This is a test message from the test suite.');
+                        updateWidgetStatus('testing');
+                    }, 500);
+                } else {
+                    log.warning(`Widget ${index + 1} not initialized`);
+                }
+            });
+        }
+
+        function testErrorHandling() {
+            log.info('Testing error handling...');
+            // Test with invalid Convex URL
+            const testWidget = new ChatItWidget(document.createElement('div'), {
+                chatbotId: 'error-test'
+            });
+            
+            // Override the base URL to simulate connection failure
+            testWidget.api.baseUrl = 'https://invalid-url-for-testing.com';
+            testWidget.sendMessage('This should fail and show error handling');
+            
+            log.info('Error handling test initiated');
+        }
+
+        function testRetryLogic() {
+            log.info('Testing retry logic...');
+            // This will test the retry mechanism built into the widget
+            const widgets = document.querySelectorAll('[data-chatit-widget]');
+            if (widgets.length > 0 && widgets[0].chatItWidget) {
+                // Temporarily break the connection
+                const originalUrl = widgets[0].chatItWidget.api.baseUrl;
+                widgets[0].chatItWidget.api.baseUrl = 'https://invalid-retry-test.com';
+                
+                widgets[0].chatItWidget.sendMessage('Test retry logic');
+                
+                // Restore connection after 5 seconds
+                setTimeout(() => {
+                    widgets[0].chatItWidget.api.baseUrl = originalUrl;
+                    log.info('Connection restored for retry test');
+                }, 5000);
+            }
+        }
+
+        function simulateNetworkError() {
+            log.info('Simulating network error...');
+            // Override fetch to simulate network failure
+            const originalFetch = window.fetch;
+            let callCount = 0;
+            
+            window.fetch = function(...args) {
+                callCount++;
+                if (callCount <= 2) {
+                    log.warning(`Simulated network error (attempt ${callCount})`);
+                    return Promise.reject(new Error('Simulated network failure'));
+                } else {
+                    log.info('Restoring normal network behavior');
+                    window.fetch = originalFetch;
+                    return originalFetch(...args);
+                }
+            };
+            
+            // Send a message to trigger the simulated error
+            sendTestMessage();
+        }
+
+        // Event listeners
+        document.getElementById('test-health').addEventListener('click', testHealthEndpoint);
+        document.getElementById('test-cors').addEventListener('click', testCorsHeaders);
+        document.getElementById('test-chat-endpoint').addEventListener('click', testChatEndpoint);
+        document.getElementById('test-chatbot-endpoint').addEventListener('click', testChatbotEndpoint);
+        document.getElementById('send-test-message').addEventListener('click', sendTestMessage);
+        document.getElementById('test-error-handling').addEventListener('click', testErrorHandling);
+        document.getElementById('test-retry-logic').addEventListener('click', testRetryLogic);
+        document.getElementById('simulate-network-error').addEventListener('click', simulateNetworkError);
+
+        // Listen for widget events
+        window.addEventListener('chatit-widget-ready', (event) => {
+            log.success(`Widget ready: ${event.detail?.chatbotId || 'unknown'}`);
+            updateWidgetStatus('online');
+        });
+
+        // Intercept console messages from widget
+        const originalConsole = {
+            log: console.log,
+            warn: console.warn,
+            error: console.error,
+            info: console.info
+        };
+
+        console.log = function(...args) {
+            if (args[0] && args[0].includes('ChatIt')) {
+                log.info(args.join(' '));
+            }
+            originalConsole.log(...args);
         };
 
         console.warn = function(...args) {
-            const message = args.join(' ');
-            if (message.includes('ChatIt') || message.includes('Widget') || message.includes('Convex')) {
-                log(message, 'warn');
+            if (args[0] && args[0].includes('ChatIt')) {
+                log.warning(args.join(' '));
             }
-            originalWarn.apply(console, args);
+            originalConsole.warn(...args);
+        };
+
+        console.error = function(...args) {
+            if (args[0] && args[0].includes('ChatIt')) {
+                log.error(args.join(' '));
+            }
+            originalConsole.error(...args);
+        };
+
+        console.info = function(...args) {
+            if (args[0] && args[0].includes('ChatIt')) {
+                log.info(args.join(' '));
+            }
+            originalConsole.info(...args);
         };
 
         // Initialize
-        updateStatus();
-        log('🎯 Real AI ChatIt Widget test page loaded', 'success');
-        log('📡 Testing direct Convex integration...', 'info');
-        
-        // Periodic status check
-        setInterval(updateStatus, 30000); // Check every 30 seconds
+        updateEnvironmentInfo();
+        updateConnectionStatus('testing');
+        updateWidgetStatus('testing');
+
+        // Auto-run basic tests after page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log.info('Running automatic connection tests...');
+                testHealthEndpoint();
+                setTimeout(() => testCorsHeaders(), 1000);
+                setTimeout(() => testChatEndpoint(), 2000);
+                setTimeout(() => testChatbotEndpoint(), 3000);
+            }, 1000);
+        });
+
+        log.info('ChatIt Widget Test Suite initialized');
+        log.info('Click the test buttons to verify Convex integration');
     </script>
 </body>
-</html> 
+</html>
