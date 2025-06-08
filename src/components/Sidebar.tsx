@@ -77,7 +77,7 @@ export function Sidebar({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-blue-600">Chatit</h1>
+            <h1 className="text-xl font-bold text-black-600">Chatit</h1>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}

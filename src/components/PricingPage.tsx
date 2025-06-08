@@ -9,7 +9,7 @@ export function PricingPage() {
     {
       id: 'standard',
       name: 'Standard',
-      price: 29,
+      price: 20,
       features: [
         '10,000 messages per month',
         '5 chatbots',
@@ -23,7 +23,7 @@ export function PricingPage() {
     {
       id: 'premium',
       name: 'Premium',
-      price: 79,
+      price: 50,
       features: [
         '50,000 messages per month',
         '20 chatbots',
@@ -39,7 +39,7 @@ export function PricingPage() {
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: 199,
+      price: 250,
       features: [
         '200,000 messages per month',
         'Unlimited chatbots',

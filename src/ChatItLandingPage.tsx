@@ -563,9 +563,7 @@ export function ChatItLandingPage({ onGetStarted, onSignUp }: ChatItLandingPageP
               className="mt-16 p-6 bg-white rounded-lg border border-gray-200 max-w-2xl mx-auto"
             >
               <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
-              <p className="text-gray-600 mb-2">
-                <strong>InstaPay:</strong> 01211268396
-              </p>
+         
               <p className="text-sm text-gray-500">
                 After payment, upload your screenshot and we'll verify it within 24 hours.
               </p>
@@ -662,7 +660,7 @@ export function ChatItLandingPage({ onGetStarted, onSignUp }: ChatItLandingPageP
               </div>
               <span className="text-xl font-bold">CHATIT</span>
             </div>
-        v
+        
           </div>
         </div>
       </footer>
