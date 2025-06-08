@@ -85,6 +85,7 @@ export const getAllPaymentProofs = query({
   args: {
     status: v.optional(v.string()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -94,13 +95,22 @@ export const getAllPaymentProofs = query({
     // Check if user is admin (you can add admin verification here)
     // For now, this is accessible to all authenticated users
 
-    let query = ctx.db.query("paymentProofs");
-
+    let proofs;
+    
     if (args.status) {
-      query = query.withIndex("by_status", (q) => q.eq("status", args.status));
+      // TypeScript narrowing: args.status is definitely string here
+      const status: string = args.status;
+      proofs = await ctx.db
+        .query("paymentProofs")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .order("desc")
+        .collect();
+    } else {
+      proofs = await ctx.db
+        .query("paymentProofs")
+        .order("desc")
+        .collect();
     }
-
-    const proofs = await query.order("desc").collect();
 
     // Get user details for each proof
     const proofsWithUsers = await Promise.all(
@@ -124,6 +134,7 @@ export const verifyPaymentProof = mutation({
     paymentProofId: v.id("paymentProofs"),
     adminNotes: v.optional(v.string()),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
     const adminUserId = await getAuthUserId(ctx);
     if (!adminUserId) {
@@ -208,6 +219,7 @@ export const rejectPaymentProof = mutation({
     rejectionReason: v.string(),
     adminNotes: v.optional(v.string()),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
     const adminUserId = await getAuthUserId(ctx);
     if (!adminUserId) {
@@ -252,6 +264,14 @@ export const rejectPaymentProof = mutation({
 // Get payment statistics
 export const getPaymentStats = query({
   args: {},
+  returns: v.object({
+    total: v.number(),
+    pending: v.number(),
+    verified: v.number(),
+    rejected: v.number(),
+    totalRevenue: v.number(),
+    monthlyRevenue: v.number(),
+  }),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -280,6 +300,7 @@ export const getProofImageUrl = query({
   args: {
     storageId: v.id("_storage"),
   },
+  returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     return await ctx.storage.getUrl(args.storageId);
   },

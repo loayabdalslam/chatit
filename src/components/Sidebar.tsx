@@ -150,21 +150,34 @@ export function Sidebar({
         )}
 
         {/* Admin Section */}
-        {adminInfo && !isCollapsed && (
+        {!isCollapsed && (
           <div className="mt-8">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Admin
             </h3>
+            {adminInfo && (
+              <button
+                onClick={() => onPageChange("admin")}
+                className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors mb-2 ${
+                  currentPage === "admin"
+                    ? "bg-red-100 text-red-700"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              >
+                <span className="text-lg mr-3">⚙️</span>
+                <span>Admin Panel</span>
+              </button>
+            )}
             <button
-              onClick={() => onPageChange("admin")}
+              onClick={() => onPageChange("super-admin")}
               className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                currentPage === "admin"
+                currentPage === "super-admin"
                   ? "bg-red-100 text-red-700"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
-              <span className="text-lg mr-3">⚙️</span>
-              <span>Admin Panel</span>
+              <span className="text-lg mr-3">👑</span>
+              <span>Super Admin</span>
             </button>
           </div>
         )}

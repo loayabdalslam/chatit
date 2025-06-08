@@ -108,6 +108,27 @@ function AppContent() {
   // Track page visits for analytics
   usePageTracking(currentPage);
 
+  // Handle URL changes and route synchronization
+  useEffect(() => {
+    const handlePopState = () => {
+      const specialRoute = checkSpecialRoutes();
+      setCurrentPage(specialRoute);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Handle initial route detection
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/contact' || path === '/contact-us') {
+      setCurrentPage('contact');
+    } else if (path === '/admin' || path === '/super-admin') {
+      setCurrentPage('super-admin');
+    }
+  }, []);
+
   useEffect(() => {
     if (user && (currentPage === "auth" || currentPage === "landing")) {
       setCurrentPage("dashboard");
@@ -147,6 +168,32 @@ function AppContent() {
   const handleSignOut = async () => {
     await signOut();
     setCurrentPage("landing");
+  };
+
+  // Function to handle page navigation with URL updates
+  const navigateToPage = (page: Page) => {
+    setCurrentPage(page);
+    
+    // Update URL without page reload
+    let newPath = '/';
+    switch (page) {
+      case 'contact':
+        newPath = '/contact';
+        break;
+      case 'super-admin':
+        newPath = '/admin';
+        break;
+      case 'landing':
+        newPath = '/';
+        break;
+      default:
+        // For authenticated pages, keep them as SPA routes
+        break;
+    }
+    
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({}, '', newPath);
+    }
   };
 
   const renderContent = () => {

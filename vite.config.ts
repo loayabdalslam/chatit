@@ -41,7 +41,16 @@ window.addEventListener('message', async (message) => {
     },
   },
   server: {
-    historyApiFallback: true,
+    historyApiFallback: {
+      // Handle client-side routing
+      rewrites: [
+        { from: /^\/contact$/, to: '/index.html' },
+        { from: /^\/admin$/, to: '/index.html' },
+        { from: /^\/super-admin$/, to: '/index.html' },
+        { from: /^\/payment$/, to: '/index.html' },
+        { from: /^\/(?!api|public|assets).*/, to: '/index.html' }
+      ]
+    },
     host: true, // Allow external connections
     cors: {
       origin: '*', // Allow all origins for development
@@ -62,7 +71,16 @@ window.addEventListener('message', async (message) => {
 
   },
   preview: {
-    historyApiFallback: true,
+    historyApiFallback: {
+      // Handle client-side routing
+      rewrites: [
+        { from: /^\/contact$/, to: '/index.html' },
+        { from: /^\/admin$/, to: '/index.html' },
+        { from: /^\/super-admin$/, to: '/index.html' },
+        { from: /^\/payment$/, to: '/index.html' },
+        { from: /^\/(?!api|public|assets).*/, to: '/index.html' }
+      ]
+    },
     host: true,
     cors: {
       origin: '*',

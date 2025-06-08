@@ -1,0 +1,35 @@
+User-agent: *
+Allow: /
+
+# Allow access to main pages
+Allow: /
+Allow: /contact
+Allow: /pricing
+Allow: /features
+Allow: /docs
+Allow: /help
+Allow: /about
+Allow: /blog
+Allow: /api-docs
+Allow: /privacy
+Allow: /terms
+
+# Disallow admin and user-specific pages
+Disallow: /admin*
+Disallow: /dashboard*
+Disallow: /auth*
+Disallow: /payment*
+Disallow: /widget/*
+
+# Disallow API endpoints
+Disallow: /api/*
+
+# Allow CSS and JS files
+Allow: /*.css$
+Allow: /*.js$
+
+# Sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml
+
+# Crawl delay (optional - adjust as needed)
+Crawl-delay: 1

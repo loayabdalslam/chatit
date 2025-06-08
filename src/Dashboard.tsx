@@ -230,7 +230,7 @@ export function Dashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500">No recent activity</p>
-              </div>
+            </div>
             )}
           </div>
         </div>

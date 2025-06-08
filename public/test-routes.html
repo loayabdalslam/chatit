@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Testing - ChatIt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .route-test {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+            display: inline-block;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatIt Route Testing</h1>
+    
+    <div class="route-test">
+        <h2>Test Routes</h2>
+        <p>Click the links below to test if the routes are working:</p>
+        
+        <a href="/contact" class="button">Test /contact</a>
+        <a href="/admin" class="button">Test /admin</a>
+        <a href="/super-admin" class="button">Test /super-admin</a>
+        <a href="/" class="button">Back to Home</a>
+    </div>
+    
+    <div class="route-test">
+        <h2>Current URL Info</h2>
+        <p id="current-path">Current path: <span id="path-display"></span></p>
+        <p id="current-hash">Current hash: <span id="hash-display"></span></p>
+    </div>
+    
+    <script>
+        // Update current path display
+        function updatePathDisplay() {
+            document.getElementById('path-display').textContent = window.location.pathname;
+            document.getElementById('hash-display').textContent = window.location.hash || 'none';
+        }
+        
+        // Update on load
+        updatePathDisplay();
+        
+        // Update on navigation
+        window.addEventListener('popstate', updatePathDisplay);
+    </script>
+</body>
+</html> 

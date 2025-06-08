@@ -31,11 +31,11 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
+          e.preventDefault();
+          setSubmitting(true);
     
     try {
-      const formData = new FormData(e.target as HTMLFormElement);
+          const formData = new FormData(e.target as HTMLFormElement);
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
       
@@ -45,7 +45,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
         return;
       }
       
-      formData.set("flow", flow);
+          formData.set("flow", flow);
       
       const result = await signIn("password", formData);
       
@@ -67,7 +67,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                 toast.error("Invalid referral code detected.");
               } else if (referralError.message?.includes("already been referred")) {
                 toast.warning("You've already been referred by someone else.");
-              } else {
+            } else {
                 toast.warning("Note: There was an issue processing your referral code.");
               }
             }
@@ -97,8 +97,8 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
           : "Could not create account. Please try again.";
       }
       
-      toast.error(toastTitle);
-      setSubmitting(false);
+            toast.error(toastTitle);
+            setSubmitting(false);
     }
   };
 
@@ -128,12 +128,12 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
               </label>
-              <input
+        <input
                 id="email"
                 name="email"
-                type="email"
+          type="email"
                 autoComplete="email"
-                required
+          required
                 className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
                 placeholder="Enter your email"
               />
@@ -143,12 +143,12 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
+        <input
                 id="password"
                 name="password"
-                type="password"
+          type="password"
                 autoComplete={flow === "signIn" ? "current-password" : "new-password"}
-                required
+          required
                 minLength={6}
                 className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
                 placeholder="Enter your password"
@@ -196,22 +196,22 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
               ) : (
                 flow === "signIn" ? "Sign in" : "Create account"
               )}
-            </button>
+        </button>
 
             <div className="text-center">
               <span className="text-sm text-gray-600">
-                {flow === "signIn"
-                  ? "Don't have an account? "
-                  : "Already have an account? "}
-              </span>
-              <button
-                type="button"
+            {flow === "signIn"
+              ? "Don't have an account? "
+              : "Already have an account? "}
+          </span>
+          <button
+            type="button"
                 className="text-sm font-medium text-black hover:underline"
                 onClick={() => {
                   setFlow(flow === "signIn" ? "signUp" : "signIn");
                   // Don't clear referral code when switching flows
                 }}
-              >
+          >
                 {flow === "signIn" ? "Sign up here" : "Sign in instead"}
               </button>
             </div>
@@ -231,9 +231,9 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
               className="w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
             >
               Try without account
-            </button>
-          </div>
-        </form>
+          </button>
+        </div>
+      </form>
       </div>
     </div>
   );

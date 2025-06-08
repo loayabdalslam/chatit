@@ -253,7 +253,7 @@ npm run build
 ### 3. Update Widget URLs
 ```html
 <!-- Change script source to production URL -->
-<script src="https://yourdomain.com/widget.js"></script>
+<script src="https://chatit.cloud/widget.js"></script>
 ```
 
 ### 4. Configure CORS
@@ -263,7 +263,7 @@ Make sure your production domain allows CORS in `vite.config.ts`:
 export default defineConfig({
   server: {
     cors: {
-      origin: ['https://yourdomain.com', '*'],
+      origin: ['https://chatit.cloud', '*'],
       credentials: true
     }
   }
