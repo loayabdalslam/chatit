@@ -6,13 +6,16 @@ import { authTables } from "@convex-dev/auth/server";
 const extendedAuthTables = {
   ...authTables,
   users: defineTable({
-    ...authTables.users.validator._def,
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    image: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
     referralCode: v.optional(v.string()),
   })
-    .index("by_referral_code", ["referralCode"])
-    .searchIndex("search_users", {
-      searchField: "email",
-    }),
+    .index("by_referral_code", ["referralCode"]),
 };
 
 const applicationTables = {
@@ -150,6 +153,16 @@ const applicationTables = {
     .index("by_referrer", ["referrerId"])
     .index("by_referred_user", ["referredUserId"])
     .index("by_subscription", ["subscriptionId"]),
+
+  commissions: defineTable({
+    referralId: v.id("referrals"),
+    referrerId: v.id("users"),
+    referredUserId: v.id("users"),
+    amount: v.number(),
+    subscriptionAmount: v.number(),
+    createdAt: v.number(),
+  }).index("by_referral", ["referralId"])
+    .index("by_referrer", ["referrerId"]),
 };
 
 export default defineSchema({

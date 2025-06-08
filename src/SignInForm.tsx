@@ -15,7 +15,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   
-  const processReferral = useMutation(api.referrals.processReferral);
+  const processSignupReferral = useMutation(api.auth.processSignupReferral);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,52 +23,71 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
     
     try {
       const formData = new FormData(e.target as HTMLFormElement);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+      
+      if (!email || !password) {
+        toast.error("Please fill in all fields");
+        setSubmitting(false);
+        return;
+      }
+      
       formData.set("flow", flow);
       
       const result = await signIn("password", formData);
       
-      // If signup with referral code, process the referral
-      if (flow === "signUp" && referralCode.trim()) {
-        try {
-          // Note: We'll need to get the user ID after successful signup
-          // This would need to be handled in a different way since we don't have direct access to the new user ID
-          // For now, we'll handle this in the auth flow
-        } catch (error) {
-          console.error("Error processing referral:", error);
+      if (result) {
+        // If signup with referral code, process the referral
+        if (flow === "signUp" && referralCode.trim()) {
+          try {
+            await processSignupReferral({ referralCode: referralCode.trim() });
+            toast.success("Account created successfully! Referral processed.");
+          } catch (referralError) {
+            console.error("Referral processing error:", referralError);
+            // Don't fail the signup if referral processing fails
+            toast.success("Account created successfully!");
+            toast.warning("Note: There was an issue processing your referral code.");
+          }
+        } else {
+          toast.success(flow === "signIn" ? "Welcome back!" : "Account created successfully!");
         }
+        onSuccess?.();
+      }
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      let toastTitle = "";
+      
+      if (error.message?.includes("Invalid password") || error.message?.includes("Invalid login")) {
+        toastTitle = "Invalid email or password. Please try again.";
+      } else if (error.message?.includes("User not found")) {
+        toastTitle = "Account not found. Did you mean to sign up?";
+      } else if (error.message?.includes("User already exists")) {
+        toastTitle = "Account already exists. Did you mean to sign in?";
+      } else {
+        toastTitle = flow === "signIn" 
+          ? "Could not sign in. Please check your credentials."
+          : "Could not create account. Please try again.";
       }
       
-      toast.success(flow === "signIn" ? "Welcome back!" : "Account created successfully!");
-      onSuccess?.();
-    } catch (error: any) {
-      let toastTitle = "";
-      if (error.message.includes("Invalid password")) {
-        toastTitle = "Invalid password. Please try again.";
-      } else {
-        toastTitle =
-          flow === "signIn"
-            ? "Could not sign in, did you mean to sign up?"
-            : "Could not sign up, did you mean to sign in?";
-      }
       toast.error(toastTitle);
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-600">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-black">
             <span className="text-white text-xl font-bold">C</span>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-            {flow === "signIn" ? "Sign in to your account" : "Create your account"}
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
+            {flow === "signIn" ? "Welcome back" : "Create your account"}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-gray-600">
             {flow === "signIn" 
-              ? "Welcome back to Chatit.cloud" 
-              : "Join thousands of businesses using Chatit.cloud"
+              ? "Sign in to your ChatIt account" 
+              : "Join thousands of businesses using ChatIt"
             }
           </p>
         </div>
@@ -76,7 +95,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email address
               </label>
               <input
@@ -85,12 +104,13 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
-                placeholder="Email address"
+                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
+                placeholder="Enter your email"
               />
             </div>
+            
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
               <input
@@ -99,15 +119,21 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                 type="password"
                 autoComplete={flow === "signIn" ? "current-password" : "new-password"}
                 required
-                className="relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
-                placeholder="Password"
+                minLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
+                placeholder="Enter your password"
               />
+              {flow === "signUp" && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Password must be at least 6 characters long
+                </p>
+              )}
             </div>
             
             {flow === "signUp" && (
               <div>
-                <label htmlFor="referralCode" className="sr-only">
-                  Referral Code (Optional)
+                <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Referral Code <span className="text-gray-500">(Optional)</span>
                 </label>
                 <input
                   id="referralCode"
@@ -115,21 +141,21 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                   type="text"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  className="relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
-                  placeholder="Referral Code (Optional)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-colors"
+                  placeholder="Enter referral code"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Have a referral code? Enter it to help your friend earn rewards!
+                  Have a referral code? Your friend will earn 20% commission!
                 </p>
               </div>
             )}
           </div>
 
-          <div>
+          <div className="space-y-4">
             <button
               type="submit"
               disabled={submitting}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center py-3 px-4 text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? (
                 <div className="flex items-center">
@@ -140,39 +166,42 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                 flow === "signIn" ? "Sign in" : "Create account"
               )}
             </button>
-          </div>
 
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {flow === "signIn"
-                ? "Don't have an account? "
-                : "Already have an account? "}
-            </span>
+            <div className="text-center">
+              <span className="text-sm text-gray-600">
+                {flow === "signIn"
+                  ? "Don't have an account? "
+                  : "Already have an account? "}
+              </span>
+              <button
+                type="button"
+                className="text-sm font-medium text-black hover:underline"
+                onClick={() => {
+                  setFlow(flow === "signIn" ? "signUp" : "signIn");
+                  setReferralCode("");
+                }}
+              >
+                {flow === "signIn" ? "Sign up here" : "Sign in instead"}
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
             <button
               type="button"
-              className="text-sm font-medium text-blue-600 hover:text-blue-500 hover:underline"
-              onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
+              onClick={() => void signIn("anonymous")}
+              className="w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
             >
-              {flow === "signIn" ? "Sign up here" : "Sign in instead"}
+              Try without account
             </button>
           </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void signIn("anonymous")}
-            className="w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-          >
-            Try without account
-          </button>
         </form>
       </div>
     </div>

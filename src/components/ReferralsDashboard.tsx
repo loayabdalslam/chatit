@@ -7,6 +7,7 @@ export function ReferralsDashboard() {
   const referralStats = useQuery(api.referrals.getReferralStats);
   const generateReferralCode = useMutation(api.referrals.generateReferralCode);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const handleGenerateCode = async () => {
     if (referralStats?.referralCode) return;
@@ -22,239 +23,270 @@ export function ReferralsDashboard() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard!");
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCode(true);
+      toast.success(`${type} copied to clipboard!`);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch (error) {
+      toast.error(`Failed to copy ${type.toLowerCase()}`);
+    }
   };
 
-  const getReferralUrl = () => {
-    if (!referralStats?.referralCode) return "";
-    return `${window.location.origin}?ref=${referralStats.referralCode}`;
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-green-100 text-green-800",
-      paid: "bg-blue-100 text-blue-800",
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   if (!referralStats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
       </div>
     );
   }
 
+  const referralUrl = `${window.location.origin}?ref=${referralStats.referralCode}`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Referral Program
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Earn 20% commission for every user you refer that subscribes to a paid plan
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h1 className="text-2xl font-bold text-black mb-2">Affiliate Program</h1>
+        <p className="text-gray-600">
+          Earn 20% commission for every user you refer who subscribes to a paid plan.
+        </p>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Referrals</p>
-                <p className="text-3xl font-bold text-blue-600">{referralStats.totalReferrals}</p>
-              </div>
-              <div className="text-blue-600 text-2xl">👥</div>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Referrals</p>
+              <p className="text-3xl font-bold text-black">{referralStats.totalReferrals}</p>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                <p className="text-3xl font-bold text-green-600">${referralStats.totalEarnings}</p>
-              </div>
-              <div className="text-green-600 text-2xl">💰</div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Earnings</p>
-                <p className="text-3xl font-bold text-yellow-600">${referralStats.pendingEarnings}</p>
-              </div>
-              <div className="text-yellow-600 text-2xl">⏳</div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Commission Rate</p>
-                <p className="text-3xl font-bold text-purple-600">20%</p>
-              </div>
-              <div className="text-purple-600 text-2xl">📈</div>
-            </div>
+            <div className="text-black text-2xl">👥</div>
           </div>
         </div>
 
-        {/* Referral Code Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Referral Code</h2>
-          
-          {referralStats.referralCode ? (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Referral Code
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={referralStats.referralCode}
-                      readOnly
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50 text-lg font-mono"
-                    />
-                    <button
-                      onClick={() => copyToClipboard(referralStats.referralCode!)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Referral URL
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={getReferralUrl()}
-                      readOnly
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg bg-gray-50 text-sm"
-                    />
-                    <button
-                      onClick={() => copyToClipboard(getReferralUrl())}
-                      className="px-4 py-2 bg-green-600 text-white rounded-r-lg hover:bg-green-700 transition-colors"
-                    >
-                      Copy
-                    </button>
-                  </div>
+        <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Referrals</p>
+              <p className="text-3xl font-bold text-black">{referralStats.activeReferrals}</p>
+            </div>
+            <div className="text-black text-2xl">✅</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+              <p className="text-3xl font-bold text-black">{formatCurrency(referralStats.totalEarnings)}</p>
+            </div>
+            <div className="text-black text-2xl">💰</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">This Month</p>
+              <p className="text-3xl font-bold text-black">{formatCurrency(referralStats.monthlyEarnings)}</p>
+            </div>
+            <div className="text-black text-2xl">📈</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Referral Code Section */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-black mb-4">Your Affiliate Code</h3>
+        
+        {referralStats.referralCode ? (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Referral Code</label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={referralStats.referralCode}
+                    readOnly
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-md bg-gray-50 text-gray-900"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(referralStats.referralCode!, "Referral code")}
+                    className="px-4 py-3 bg-black text-white rounded-r-md hover:bg-gray-800 transition-colors"
+                  >
+                    {copiedCode ? "✓" : "Copy"}
+                  </button>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">You don't have a referral code yet.</p>
-              <button
-                onClick={handleGenerateCode}
-                disabled={isGenerating}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
-              >
-                {isGenerating ? "Generating..." : "Generate Referral Code"}
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* How It Works */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">1️⃣</span>
+            <div className="flex items-center space-x-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Referral URL</label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={referralUrl}
+                    readOnly
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-l-md bg-gray-50 text-gray-900 text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(referralUrl, "Referral URL")}
+                    className="px-4 py-3 bg-black text-white rounded-r-md hover:bg-gray-800 transition-colors"
+                  >
+                    {copiedCode ? "✓" : "Copy"}
+                  </button>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Share Your Link</h3>
-              <p className="text-gray-600">Share your referral link with friends, colleagues, or on social media.</p>
             </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">2️⃣</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">They Sign Up</h3>
-              <p className="text-gray-600">When someone signs up using your link and subscribes to a paid plan.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">3️⃣</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Earn Commission</h3>
-              <p className="text-gray-600">You earn 20% of their monthly subscription fee as commission.</p>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">How to share your referral:</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Share your referral code or URL with friends and colleagues</li>
+                <li>• When they sign up and subscribe to a paid plan, you earn 20% commission</li>
+                <li>• Commissions are paid monthly to your account</li>
+                <li>• Track your referrals and earnings in real-time below</li>
+              </ul>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">🎯</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Generate Your Affiliate Code</h4>
+            <p className="text-gray-600 mb-4">
+              Create your unique referral code to start earning 20% commission on referrals.
+            </p>
+            <button
+              onClick={handleGenerateCode}
+              disabled={isGenerating}
+              className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGenerating ? (
+                <div className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Generating...
+                </div>
+              ) : (
+                "Generate Affiliate Code"
+              )}
+            </button>
+          </div>
+        )}
+      </div>
 
-        {/* Referral History */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Referral History</h2>
-          
-          {referralStats.referrals.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Commission
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
+      {/* Referrals List */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-black mb-6">Your Referrals</h3>
+        
+        {referralStats.referrals.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">User</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">Join Date</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">Commission</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">Paid Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {referralStats.referrals.map((referral) => (
+                  <tr key={referral._id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900">
+                          {referral.referredUserEmail || "Anonymous User"}
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          ID: {referral.referredUserId.slice(-8)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-900">
+                      {formatDate(referral.createdAt)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        referral.status === 'completed' || referral.status === 'paid'
+                          ? 'bg-black text-white' 
+                          : referral.status === 'pending'
+                          ? 'bg-gray-100 text-gray-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                      {formatCurrency(referral.commission)}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-900">
+                      {referral.paidAt ? formatDate(referral.paidAt) : "N/A"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {referralStats.referrals.map((referral) => (
-                    <tr key={referral._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {referral.referredUserEmail}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(referral.status)}`}>
-                          {referral.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${referral.commission}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(referral.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-gray-400 text-6xl mb-4">🎁</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No referrals yet</h3>
-              <p className="text-gray-600">Start sharing your referral link to earn commissions!</p>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-4xl mb-4">👥</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No Referrals Yet</h4>
+            <p className="text-gray-600 mb-4">
+              Share your referral code to start earning commissions when people sign up!
+            </p>
+            {referralStats.referralCode && (
+              <button
+                onClick={() => copyToClipboard(referralUrl, "Referral URL")}
+                className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+              >
+                Copy Referral URL
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Commission Structure */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-black mb-4">Commission Structure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-gray-50 rounded-lg text-center">
+            <div className="text-2xl font-bold text-black mb-2">20%</div>
+            <div className="text-sm text-gray-600">Commission Rate</div>
+            <div className="text-xs text-gray-500 mt-1">On all paid subscriptions</div>
+          </div>
+          
+          <div className="p-4 bg-gray-50 rounded-lg text-center">
+            <div className="text-2xl font-bold text-black mb-2">Monthly</div>
+            <div className="text-sm text-gray-600">Payment Schedule</div>
+            <div className="text-xs text-gray-500 mt-1">Payments on the 1st of each month</div>
+          </div>
+          
+          <div className="p-4 bg-gray-50 rounded-lg text-center">
+            <div className="text-2xl font-bold text-black mb-2">Lifetime</div>
+            <div className="text-sm text-gray-600">Commission Duration</div>
+            <div className="text-xs text-gray-500 mt-1">Earn as long as they subscribe</div>
+          </div>
         </div>
       </div>
     </div>

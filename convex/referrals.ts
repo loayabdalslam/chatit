@@ -12,18 +12,28 @@ export const generateReferralCode = mutation({
       throw new Error("Not authenticated");
     }
 
+    // Check if user already has a referral code
+    const user = await ctx.db.get(userId);
+    if (user?.referralCode) {
+      return user.referralCode;
+    }
+
     // Generate a unique 8-character code
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    
-    // Check if code already exists
-    const existing = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("referralCode"), code))
-      .first();
-    
-    if (existing) {
-      // Recursively try again if code exists
-      return await generateReferralCode(ctx, {});
+    let code = "";
+    let attempts = 0;
+    do {
+      code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("by_referral_code", (q) => q.eq("referralCode", code))
+        .first();
+      
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+
+    if (attempts >= 10) {
+      throw new Error("Could not generate unique referral code");
     }
 
     // Update user with referral code
@@ -33,17 +43,70 @@ export const generateReferralCode = mutation({
   },
 });
 
-// Get referral stats for current user
+// Process a referral when someone signs up with a referral code
+export const processReferral = mutation({
+  args: {
+    referralCode: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Find the referrer by referral code
+    const referrer = await ctx.db
+      .query("users")
+      .withIndex("by_referral_code", (q) => q.eq("referralCode", args.referralCode))
+      .first();
+
+    if (!referrer) {
+      throw new Error("Invalid referral code");
+    }
+
+    // Check if user is trying to refer themselves
+    if (referrer._id === userId) {
+      throw new Error("Cannot use your own referral code");
+    }
+
+    // Check if this user was already referred
+    const existingReferral = await ctx.db
+      .query("referrals")
+      .withIndex("by_referred_user", (q) => q.eq("referredUserId", userId))
+      .first();
+
+    if (existingReferral) {
+      throw new Error("User has already been referred");
+    }
+
+    // Create referral record
+    await ctx.db.insert("referrals", {
+      referrerId: referrer._id,
+      referredUserId: userId,
+      status: "pending",
+      commission: 0, // Will be updated when subscription is created
+      subscriptionId: "" as any, // Will be updated when subscription is created
+      createdAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+// Get referral statistics for the current user
 export const getReferralStats = query({
   args: {},
   returns: v.object({
-    totalReferrals: v.number(),
-    totalEarnings: v.number(),
-    pendingEarnings: v.number(),
     referralCode: v.optional(v.string()),
+    totalReferrals: v.number(),
+    activeReferrals: v.number(),
+    totalEarnings: v.number(),
+    monthlyEarnings: v.number(),
     referrals: v.array(v.object({
       _id: v.id("referrals"),
-      referredUserEmail: v.string(),
+      referredUserId: v.id("users"),
+      referredUserEmail: v.optional(v.string()),
       status: v.string(),
       commission: v.number(),
       createdAt: v.number(),
@@ -57,22 +120,21 @@ export const getReferralStats = query({
     }
 
     const user = await ctx.db.get(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
+    
     // Get all referrals made by this user
     const referrals = await ctx.db
       .query("referrals")
       .withIndex("by_referrer", (q) => q.eq("referrerId", userId))
       .collect();
 
+    // Get referred user details
     const referralDetails = await Promise.all(
       referrals.map(async (referral) => {
         const referredUser = await ctx.db.get(referral.referredUserId);
         return {
           _id: referral._id,
-          referredUserEmail: referredUser?.email || "Unknown",
+          referredUserId: referral.referredUserId,
+          referredUserEmail: referredUser?.email,
           status: referral.status,
           commission: referral.commission,
           createdAt: referral.createdAt,
@@ -81,62 +143,63 @@ export const getReferralStats = query({
       })
     );
 
-    const totalEarnings = referrals
-      .filter(r => r.status === "paid")
-      .reduce((sum, r) => sum + r.commission, 0);
-
-    const pendingEarnings = referrals
-      .filter(r => r.status === "completed")
+    // Calculate statistics
+    const totalEarnings = referrals.reduce((sum, r) => sum + r.commission, 0);
+    const activeReferrals = referrals.filter(r => r.status === "active" || r.status === "completed").length;
+    
+    // Calculate monthly earnings (last 30 days)
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const monthlyEarnings = referrals
+      .filter(r => r.paidAt && r.paidAt > thirtyDaysAgo)
       .reduce((sum, r) => sum + r.commission, 0);
 
     return {
+      referralCode: user?.referralCode,
       totalReferrals: referrals.length,
+      activeReferrals,
       totalEarnings,
-      pendingEarnings,
-      referralCode: user.referralCode,
+      monthlyEarnings,
       referrals: referralDetails,
     };
   },
 });
 
-// Process a referral when a user signs up with a referral code
-export const processReferral = mutation({
+// Calculate and award referral commission
+export const awardReferralCommission = mutation({
   args: {
-    referralCode: v.string(),
-    newUserId: v.id("users"),
+    userId: v.id("users"),
+    subscriptionAmount: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Find the referrer by referral code
-    const referrer = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("referralCode"), args.referralCode))
-      .first();
-
-    if (!referrer) {
-      // Invalid referral code, but don't throw error
-      return null;
-    }
-
-    // Check if this user already has a referral record
-    const existingReferral = await ctx.db
+    // Find if this user was referred
+    const referral = await ctx.db
       .query("referrals")
-      .withIndex("by_referred_user", (q) => q.eq("referredUserId", args.newUserId))
+      .withIndex("by_referred_user", (q) => q.eq("referredUserId", args.userId))
       .first();
 
-    if (existingReferral) {
-      // Already referred, don't create duplicate
-      return null;
+    if (!referral) {
+      return null; // No referral, nothing to do
     }
 
-    // For now, just mark the referral as pending
-    // Commission will be calculated when user subscribes
-    await ctx.db.insert("referrals", {
-      referrerId: referrer._id,
-      referredUserId: args.newUserId,
-      status: "pending",
-      commission: 0, // Will be updated when subscription is created
-      subscriptionId: "" as any, // Will be updated when subscription is created
+    // Calculate commission (20% of subscription amount)
+    const commissionRate = 0.2; // 20%
+    const commission = args.subscriptionAmount * commissionRate;
+
+    // Update referral record
+    await ctx.db.patch(referral._id, {
+      status: "completed",
+      commission: commission,
+      paidAt: Date.now(),
+    });
+
+    // Create commission record for tracking
+    await ctx.db.insert("commissions", {
+      referralId: referral._id,
+      referrerId: referral.referrerId,
+      referredUserId: args.userId,
+      amount: commission,
+      subscriptionAmount: args.subscriptionAmount,
       createdAt: Date.now(),
     });
 
@@ -144,45 +207,75 @@ export const processReferral = mutation({
   },
 });
 
-// Calculate and process commission when a subscription is created
-export const processSubscriptionCommission = mutation({
+// Get all users who were referred by a specific code (for admin/tracking)
+export const getReferralsByCode = query({
   args: {
-    subscriptionId: v.id("subscriptions"),
-    userId: v.id("users"),
-    plan: v.string(),
+    referralCode: v.string(),
   },
-  returns: v.null(),
+  returns: v.array(v.object({
+    userId: v.id("users"),
+    email: v.optional(v.string()),
+    signupDate: v.number(),
+    status: v.string(),
+  })),
   handler: async (ctx, args) => {
-    // Find pending referral for this user
-    const pendingReferral = await ctx.db
-      .query("referrals")
-      .withIndex("by_referred_user", (q) => q.eq("referredUserId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+    // Find the referrer
+    const referrer = await ctx.db
+      .query("users")
+      .withIndex("by_referral_code", (q) => q.eq("referralCode", args.referralCode))
       .first();
 
-    if (!pendingReferral) {
-      return null;
+    if (!referrer) {
+      return [];
     }
 
-    // Calculate 20% commission based on plan
-    const planPrices = {
-      "class-c": 29, // $29/month
-      "class-b": 99, // $99/month
-      "class-a": 299, // $299/month
+    // Get all referrals
+    const referrals = await ctx.db
+      .query("referrals")
+      .withIndex("by_referrer", (q) => q.eq("referrerId", referrer._id))
+      .collect();
+
+    // Get user details
+    const results = await Promise.all(
+      referrals.map(async (referral) => {
+        const user = await ctx.db.get(referral.referredUserId);
+        return {
+          userId: referral.referredUserId,
+          email: user?.email,
+          signupDate: referral.createdAt,
+          status: referral.status,
+        };
+      })
+    );
+
+    return results;
+  },
+});
+
+// Validate referral code
+export const validateReferralCode = query({
+  args: {
+    code: v.string(),
+  },
+  returns: v.object({
+    valid: v.boolean(),
+    referrerName: v.optional(v.string()),
+    referrerEmail: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const referrer = await ctx.db
+      .query("users")
+      .withIndex("by_referral_code", (q) => q.eq("referralCode", args.code))
+      .first();
+
+    if (!referrer) {
+      return { valid: false };
+    }
+
+    return {
+      valid: true,
+      referrerName: referrer.name,
+      referrerEmail: referrer.email,
     };
-
-    const planPrice = planPrices[args.plan as keyof typeof planPrices] || 0;
-    const commission = planPrice * 0.2; // 20% commission
-
-    if (commission > 0) {
-      // Update the referral with subscription details and commission
-      await ctx.db.patch(pendingReferral._id, {
-        status: "completed",
-        commission,
-        subscriptionId: args.subscriptionId,
-      });
-    }
-
-    return null;
   },
 }); 
