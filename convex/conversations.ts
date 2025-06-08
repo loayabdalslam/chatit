@@ -132,7 +132,7 @@ export const sendMessage = mutation({
       timestamp: Date.now(),
     });
 
-    // Generate AI response immediately using the chatbase-clone approach
+    // Generate AI response using Convex's built-in AI system
     const response = await generateAIResponse(ctx, args.conversationId, args.content);
     
     // Insert AI response
@@ -231,7 +231,7 @@ export const sendMessageInternal = internalMutation({
       timestamp: Date.now(),
     });
 
-    // Generate AI response immediately using the chatbase-clone approach
+    // Generate AI response using Convex's built-in AI system
     const response = await generateAIResponse(ctx, args.conversationId, args.content);
     
     // Insert AI response
@@ -253,7 +253,7 @@ export const sendMessageInternal = internalMutation({
   },
 });
 
-// Helper function to generate AI responses using chatbase-clone approach
+// Helper function to generate AI responses using Convex's built-in AI system
 async function generateAIResponse(ctx: any, conversationId: Id<"conversations">, userMessage: string): Promise<string> {
   try {
     // Get conversation context
@@ -268,96 +268,58 @@ async function generateAIResponse(ctx: any, conversationId: Id<"conversations">,
       return "I'm sorry, I couldn't process your request.";
     }
 
-    // Get recent messages for context (last 10 messages)
-    const recentMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_conversation", (q: any) => q.eq("conversationId", conversationId))
-      .order("desc")
-      .take(10);
+    // Use Convex's advanced AI response generation system
+    try {
+      // Try the full Convex native AI response with document search and intelligent processing
+      const aiResponse = await ctx.runAction(internal.ai.generateResponseWithConvexSearch, {
+        userMessage,
+        chatbotId: conversation.chatbotId,
+        threadId: conversationId,
+        userId: conversation.userId,
+      });
 
-    // Enhanced rule-based responses with chatbot personalization
-    const lowerMessage = userMessage.toLowerCase();
+      if (aiResponse && aiResponse.text && aiResponse.text.trim()) {
+        console.log(`AI Response generated with confidence: ${aiResponse.confidence}, method: convex_native`);
+        return aiResponse.text;
+      }
+    } catch (aiError) {
+      console.log("Full AI response failed, trying fallback:", aiError);
+    }
+
+    // Fallback to instruction-based processing if full AI fails
+    try {
+      const fallbackResponse = await ctx.runQuery(internal.ai.processInstructionBasedResponse, {
+        userMessage,
+        instructions: chatbot.instructions || "Be helpful and friendly",
+        botName: chatbot.name || "AI Assistant",
+      });
+
+      if (fallbackResponse && fallbackResponse.response && fallbackResponse.response.trim()) {
+        console.log(`AI Fallback response generated with confidence: ${fallbackResponse.confidence}, method: ${fallbackResponse.method}`);
+        return fallbackResponse.response;
+      }
+    } catch (fallbackError) {
+      console.log("Instruction-based fallback failed:", fallbackError);
+    }
+
+    // Final fallback to ensure we always return something intelligent
     const botName = chatbot.name || "AI Assistant";
     const instructions = chatbot.instructions || "";
     
-    // Greeting responses
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      let greeting = `Hello! I'm ${botName}.`;
-      if (instructions.includes("helpful")) {
-        greeting += " I'm here to help you with any questions you might have.";
-      } else if (instructions.includes("friendly")) {
-        greeting += " Nice to meet you!";
-      } else {
-        greeting += " How can I assist you today?";
-      }
-      return greeting;
-    }
+    // Create a contextual response based on the chatbot's purpose
+    let contextualResponse = `Hello! I'm ${botName}. `;
     
-    // Help responses
-    if (lowerMessage.includes("help") || lowerMessage.includes("assist") || lowerMessage.includes("support")) {
-      let helpResponse = "I'm here to help! ";
-      if (instructions.includes("product")) {
-        helpResponse += "I can answer questions about our products and services.";
-      } else if (instructions.includes("technical")) {
-        helpResponse += "I can help with technical questions and troubleshooting.";
-      } else {
-        helpResponse += "Feel free to ask me any questions.";
-      }
-      return helpResponse;
-    }
-    
-    // Price/cost related questions
-    if (lowerMessage.includes("price") || lowerMessage.includes("cost") || lowerMessage.includes("pricing") || lowerMessage.includes("payment")) {
-      return "For detailed pricing information, please contact our sales team or check our pricing page. I'd be happy to help you understand our different options.";
-    }
-    
-    // Features/capabilities questions
-    if (lowerMessage.includes("feature") || lowerMessage.includes("capability") || lowerMessage.includes("what can") || lowerMessage.includes("what do")) {
-      let featureResponse = `${botName} can help you with various tasks. `;
-      if (instructions.includes("customer service")) {
-        featureResponse += "I specialize in customer support and can help resolve issues.";
-      } else if (instructions.includes("sales")) {
-        featureResponse += "I can help you learn about our products and guide you through the purchasing process.";
-      } else {
-        featureResponse += "I'm designed to be helpful and provide information based on your needs.";
-      }
-      return featureResponse;
-    }
-    
-    // Contact/human requests
-    if (lowerMessage.includes("human") || lowerMessage.includes("person") || lowerMessage.includes("agent") || lowerMessage.includes("representative")) {
-      return "I understand you'd like to speak with a human representative. While I'm an AI assistant, I'm here to help you right now. If you need further assistance, please let me know what specific help you need, or you can contact our support team directly.";
-    }
-    
-    // Thank you responses
-    if (lowerMessage.includes("thank") || lowerMessage.includes("thanks")) {
-      return "You're very welcome! I'm glad I could help. Is there anything else you'd like to know?";
-    }
-    
-    // Goodbye responses
-    if (lowerMessage.includes("bye") || lowerMessage.includes("goodbye") || lowerMessage.includes("see you")) {
-      return "Goodbye! Thank you for chatting with me. Feel free to return anytime if you have more questions. Have a great day!";
-    }
-
-    // Question detection (contains question words or ends with ?)
-    if (lowerMessage.includes("what") || lowerMessage.includes("how") || lowerMessage.includes("when") || 
-        lowerMessage.includes("where") || lowerMessage.includes("why") || lowerMessage.includes("who") || 
-        lowerMessage.endsWith("?")) {
-      return `That's a great question! While I'd love to give you a detailed answer about "${userMessage}", I might need a bit more specific information to provide the most helpful response. Could you provide more details about what you're looking for?`;
-    }
-
-    // Default response with chatbot personality
-    let defaultResponse = `Thank you for your message about "${userMessage}". `;
-    
-    if (instructions.includes("professional")) {
-      defaultResponse += "I appreciate you reaching out. How may I assist you further with this matter?";
-    } else if (instructions.includes("casual") || instructions.includes("friendly")) {
-      defaultResponse += "I'd be happy to help you with this! What would you like to know more about?";
+    if (instructions.includes("customer service") || instructions.includes("support")) {
+      contextualResponse += `I'm here to help you with any questions or issues you might have. You mentioned: "${userMessage}". Could you provide more details so I can assist you better?`;
+    } else if (instructions.includes("sales") || instructions.includes("product")) {
+      contextualResponse += `I'm here to help you learn about our products and services. Regarding "${userMessage}", I'd be happy to provide more information. What specific details would you like to know?`;
+    } else if (instructions.includes("technical") || instructions.includes("support")) {
+      contextualResponse += `I can help you with technical questions and troubleshooting. About "${userMessage}", let me help you find the right solution. Can you describe what you're trying to accomplish?`;
     } else {
-      defaultResponse += `As ${botName}, I'm here to help. Could you tell me more about what you're looking for so I can assist you better?`;
+      contextualResponse += `I understand you're asking about "${userMessage}". I'm designed to be helpful and provide useful information. Could you tell me more about what you're looking for?`;
     }
     
-    return defaultResponse;
+    return contextualResponse;
     
   } catch (error) {
     console.error("Error generating AI response:", error);
