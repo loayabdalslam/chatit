@@ -29,7 +29,7 @@ Allow: /*.css$
 Allow: /*.js$
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://chatit.cloud/sitemap.xml
 
 # Crawl delay (optional - adjust as needed)
 Crawl-delay: 1
