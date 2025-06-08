@@ -4,7 +4,7 @@
 
   // Configuration
   const CONFIG = {
-    apiUrl: 'https://reminiscent-wildebeest-246.convex.cloud',
+    apiUrl: 'https://chatit.cloud',
     defaults: {
       primaryColor: '#3b82f6',
       position: 'bottom-right',
