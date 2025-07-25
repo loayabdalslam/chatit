@@ -100,10 +100,7 @@ export class GeminiService {
     
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    if (!apiKey || apiKey.trim() === '' || apiKey === 'your_actual_api_key_here') {
-      console.error('❌ Gemini API key is missing or invalid');
-      throw new Error('Gemini API key is required for AI responses. Please add VITE_GEMINI_API_KEY to your .env file.');
-    }
+ 
 
     if (!this.model) {
       console.error('❌ Gemini model not available');
