@@ -39,20 +39,19 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand & visual identity */
+    --brand-electric: 196 100% 47%; /* #00AEEF */
+    --brand-purple: 273 68% 59%;   /* #9D4EDD */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-electric)), hsl(var(--brand-purple)));
+    --shadow-glow: 0 0 40px hsl(var(--brand-electric) / 0.35), 0 0 60px hsl(var(--brand-purple) / 0.25);
   }
 
   .dark {
@@ -82,7 +81,7 @@ All colors MUST be HSL.
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 196 100% 47%; /* focus ring in brand electric */
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
