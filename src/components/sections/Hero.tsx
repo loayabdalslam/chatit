@@ -2,6 +2,7 @@ import React from "react";
 import heroImg from "@/assets/chatit-hero.png";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
+import Typewriter from "@/components/effects/Typewriter";
 
 const Hero: React.FC = () => {
   const glowRef = React.useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ const Hero: React.FC = () => {
         <div className="relative grid lg:grid-cols-2 gap-10 items-center p-8 md:p-12">
           <div className="space-y-6 animate-enter">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Empowering Conversations with AI Brilliance
+              <Typewriter text="Empowering Conversations with AI Brilliance" />
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
               Chatit delivers enterprise-grade, LLM-powered chatbots that integrate with up to 100 PDFs to automate workflows securely and at scale.
