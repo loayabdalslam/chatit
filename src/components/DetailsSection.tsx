@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
+import emailjs from "@emailjs/browser";
 import microsoftLogo from "@/assets/microsoft-logo.png";
 const DetailsSection = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,10 @@ const DetailsSection = () => {
     company: "",
     message: ""
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {
       name,
@@ -19,36 +24,35 @@ const DetailsSection = () => {
       [name]: value
     }));
   };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Simple validation
-    if (!formData.fullName || !formData.email || !formData.message) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Create mailto link
-    const subject = `ChatIt Demo Request from ${formData.fullName}`;
-    const body = `Name: ${formData.fullName}
-Email: ${formData.email}
-Company: ${formData.company}
-
-Message:
-${formData.message}`;
+    setIsSubmitting(true);
     
-    const mailtoLink = `mailto:loaiabdalslam@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
-
-    toast.success("Email client opened!");
-
-    // Reset form
-    setFormData({
-      fullName: "",
-      email: "",
-      company: "",
-      message: ""
-    });
+    try {
+      // EmailJS configuration - Replace these with your actual values
+      const serviceId = "service_za049ca"; // Replace with your EmailJS service ID
+      const templateId = "template_oqqb0nz"; // Replace with your EmailJS template ID
+      const publicKey = "65bDI5QDBko5OJmeB"; // Replace with your EmailJS public key
+      
+      // Template parameters that match your EmailJS template
+      const templateParams = {
+        from_name: formData.fullName,
+        from_email: formData.email,
+        company: formData.company,
+        message: formData.message,
+        to_email: "loaiabdalslam@gmail.com" // Your receiving email
+      };
+      
+      await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      setFormData({ fullName: "", email: "", company: "", message: "" });
+    } catch (error) {
+      console.error("EmailJS Error:", error);
+      toast.error("Failed to send message. Please check your EmailJS configuration or try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   return <section id="contact" className="w-full bg-white py-0">
       <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
@@ -236,9 +240,10 @@ ${formData.message}`;
                 <div className="pt-4 border-t">
                   <button 
                     type="submit"
-                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300"
+                    disabled={isSubmitting}
+                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Send Message
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </button>
                 </div>
               </form>

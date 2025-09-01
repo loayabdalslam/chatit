@@ -9,7 +9,7 @@ import ImageShowcaseSection from "@/components/ImageShowcaseSection";
 import Features from "@/components/Features";
 import Models from "@/components/Models";
 import Testimonials from "@/components/Testimonials";
-import Newsletter from "@/components/Newsletter";
+
 import MadeByHumans from "@/components/MadeByHumans";
 import Footer from "@/components/Footer";
 
@@ -71,7 +71,7 @@ const Index = () => {
         <Features />
         <Models />
         <Testimonials />
-        <Newsletter />
+
         <MadeByHumans />
       </main>
       <Footer />
