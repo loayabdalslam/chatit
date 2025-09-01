@@ -10,27 +10,27 @@ interface TestimonialProps {
 }
 
 const testimonials: TestimonialProps[] = [{
-  content: "Atlas transformed our production line, handling repetitive tasks while our team focuses on innovation. 30% increase in output within three months.",
-  author: "Sarah Chen",
-  role: "VP of Operations, Axion Manufacturing",
+  content: "ChatIt's Arabic language models transformed our customer service. We saw 40% improvement in customer satisfaction with culturally appropriate responses.",
+  author: "Ahmed Hassan",
+  role: "CTO, Egyptian Banking Corp",
   gradient: "from-blue-700 via-indigo-800 to-purple-900",
   backgroundImage: "/background-section1.png"
 }, {
-  content: "Implementing Atlas in our fulfillment centers reduced workplace injuries by 40% while improving order accuracy. The learning capabilities are remarkable.",
-  author: "Michael Rodriguez",
-  role: "Director of Logistics, GlobalShip",
+  content: "The fine-tuned models understand our business terminology perfectly. ChatIt delivered enterprise-grade AI solutions that actually work for our region.",
+  author: "Fatima Al-Mansouri",
+  role: "Director of Digital Innovation, UAE Retail Group",
   gradient: "from-indigo-900 via-purple-800 to-orange-500",
   backgroundImage: "/background-section2.png"
 }, {
-  content: "Atlas adapted to our lab protocols faster than any system we've used. It's like having another researcher who never gets tired and maintains perfect precision.",
-  author: "Dr. Amara Patel",
-  role: "Lead Scientist, BioAdvance Research",
+  content: "Working with ChatIt's team has been exceptional. Their deep understanding of Arabic dialects and cultural nuances made all the difference for our chatbot deployment.",
+  author: "Omar Khalil",
+  role: "Head of Technology, Saudi Healthcare Solutions",
   gradient: "from-purple-800 via-pink-700 to-red-500",
   backgroundImage: "/background-section3.png"
 }, {
-  content: "As a mid-size business, we never thought advanced robotics would be accessible to us. Atlas changed that equation entirely with its versatility and ease of deployment.",
-  author: "Jason Lee",
-  role: "CEO, Innovative Solutions Inc.",
+  content: "As a government organization, we needed AI solutions that understand Egyptian Arabic perfectly. ChatIt delivered beyond our expectations with their specialized models.",
+  author: "Dr. Nour El-Din",
+  role: "Digital Transformation Lead, Ministry of Education Egypt",
   gradient: "from-orange-600 via-red-500 to-purple-600",
   backgroundImage: "/background-section1.png"
 }];

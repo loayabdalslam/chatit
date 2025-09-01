@@ -52,13 +52,9 @@ const Navbar = () => {
             e.preventDefault();
             scrollToTop();
           }}
-          aria-label="Pulse Robot"
+          aria-label="ChatIt.cloud"
         >
-          <img 
-            src="/logo.svg" 
-            alt="Pulse Robot Logo" 
-            className="h-7 sm:h-8" 
-          />
+          <span className="text-xl font-bold text-black">chatit.cloud</span>
         </a>
 
         {/* Desktop Navigation */}
@@ -74,7 +70,7 @@ const Navbar = () => {
             Home
           </a>
           <a href="#features" className="nav-link">About</a>
-          <a href="#details" className="nav-link">Contact</a>
+          <a href="#contact" className="nav-link">Contact</a>
         </nav>
 
         {/* Mobile menu button - increased touch target */}
@@ -116,7 +112,7 @@ const Navbar = () => {
             About
           </a>
           <a 
-            href="#details" 
+            href="#contact" 
             className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
             onClick={() => {
               setIsMenuOpen(false);

@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { toast } from "sonner";
+import microsoftLogo from "@/assets/microsoft-logo.png";
 const DetailsSection = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -36,7 +37,7 @@ const DetailsSection = () => {
       company: ""
     });
   };
-  return <section id="details" className="w-full bg-white py-0">
+  return <section id="contact" className="w-full bg-white py-0">
       <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
         <div className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2">
           {/* Left Card - The Details */}
@@ -48,7 +49,7 @@ const DetailsSection = () => {
             backgroundPosition: "center"
           }}>
               <h2 className="text-2xl sm:text-3xl font-display text-white font-bold">
-                The details
+                About ChatIt
               </h2>
             </div>
             
@@ -58,7 +59,7 @@ const DetailsSection = () => {
             border: "1px solid #ECECEC"
           }}>
               <h3 className="text-lg sm:text-xl font-display mb-6 sm:mb-8">
-                Precision engineering meets adaptive intelligence
+                Advanced AI solutions for the MENA region
               </h3>
 
               <div className="space-y-4 sm:space-y-6">
@@ -70,7 +71,7 @@ const DetailsSection = () => {
                   </div>
                   <div className="flex-1">
                     <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100">
-                      <span className="font-semibold text-base">Height:</span> 5'8"
+                      <span className="font-semibold text-base">Founded:</span> 2024
                     </div>
                   </div>
                 </div>
@@ -83,7 +84,7 @@ const DetailsSection = () => {
                   </div>
                   <div className="flex-1">
                     <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100">
-                      <span className="font-semibold text-base">Capacity:</span> 55lbs
+                      <span className="font-semibold text-base">Location:</span> Egypt
                     </div>
                   </div>
                 </div>
@@ -96,7 +97,7 @@ const DetailsSection = () => {
                   </div>
                   <div className="flex-1">
                     <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100">
-                      <span className="font-semibold text-base">Weight:</span> 140lbs
+                      <span className="font-semibold text-base">Focus:</span> MENA Region
                     </div>
                   </div>
                 </div>
@@ -109,7 +110,7 @@ const DetailsSection = () => {
                   </div>
                   <div className="flex-1">
                     <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100">
-                      <span className="font-semibold text-base">Uptime:</span> 6hr
+                      <span className="font-semibold text-base">AI Experience:</span> Since 2019
                     </div>
                   </div>
                 </div>
@@ -121,8 +122,10 @@ const DetailsSection = () => {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100">
-                      <span className="font-semibold text-base">Movement:</span> 1.5M/S
+                    <div className="p-3 rounded-lg bg-gray-50/80 backdrop-blur-sm border border-gray-100 flex items-center gap-2">
+                      <span className="font-semibold text-base">Funded by:</span>
+                      <img src={microsoftLogo} alt="Microsoft" className="h-4" />
+                      <span className="text-sm">Microsoft for Startups</span>
                     </div>
                   </div>
                 </div>
@@ -139,10 +142,10 @@ const DetailsSection = () => {
             backgroundPosition: "center"
           }}>
               <div className="inline-block px-4 sm:px-6 py-2 border border-white text-white rounded-full text-xs mb-4">
-                Request a demo
+                Contact Us
               </div>
               <h2 className="text-2xl sm:text-3xl font-display text-white font-bold mt-auto">
-                See it for yourself
+                Request a consultation
               </h2>
             </div>
             
@@ -151,51 +154,36 @@ const DetailsSection = () => {
             backgroundColor: "#FFFFFF",
             border: "1px solid #ECECEC"
           }}>
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-                <div>
-                  <input 
-                    type="text" 
-                    name="fullName" 
-                    value={formData.fullName} 
-                    onChange={handleChange} 
-                    placeholder="Full name" 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pulse-500 focus:border-transparent" 
-                    required 
-                  />
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg">Contact Information</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium text-gray-900">Loai Abdalslam Alazab</p>
+                      <p className="text-gray-600">Co-Founder</p>
+                      <p className="text-pulse-500">loaiabdalslam@gmail.com</p>
+                      <p className="text-gray-600">+20 1211268396</p>
+                    </div>
+                    
+                    <div className="border-t pt-3">
+                      <p className="font-medium text-gray-900">Hamdy Waleed Abd-Elhalim</p>
+                      <p className="text-gray-600">Co-Founder</p>
+                      <p className="text-pulse-500">hamdywaleed20@gmail.com</p>
+                      <p className="text-gray-600">+20 150 514 2388</p>
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <input 
-                    type="email" 
-                    name="email" 
-                    value={formData.email} 
-                    onChange={handleChange} 
-                    placeholder="Email address" 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pulse-500 focus:border-transparent" 
-                    required 
-                  />
-                </div>
-                
-                <div>
-                  <input 
-                    type="text" 
-                    name="company" 
-                    value={formData.company} 
-                    onChange={handleChange} 
-                    placeholder="Company (optional)" 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pulse-500 focus:border-transparent" 
-                  />
-                </div>
-                
-                <div>
-                  <button 
-                    type="submit" 
-                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300"
+                <div className="pt-4 border-t">
+                  <a 
+                    href="mailto:loaiabdalslam@gmail.com" 
+                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300 inline-block text-center"
                   >
-                    Request access
-                  </button>
+                    Request Demo
+                  </a>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         </div>
