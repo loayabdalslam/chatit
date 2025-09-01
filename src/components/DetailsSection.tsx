@@ -6,7 +6,8 @@ const DetailsSection = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    company: ""
+    company: "",
+    message: ""
   });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {
@@ -22,19 +23,31 @@ const DetailsSection = () => {
     e.preventDefault();
 
     // Simple validation
-    if (!formData.fullName || !formData.email) {
+    if (!formData.fullName || !formData.email || !formData.message) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Demo form submission
-    toast.success("Request submitted successfully!");
+    // Create mailto link
+    const subject = `ChatIt Demo Request from ${formData.fullName}`;
+    const body = `Name: ${formData.fullName}
+Email: ${formData.email}
+Company: ${formData.company}
+
+Message:
+${formData.message}`;
+    
+    const mailtoLink = `mailto:loaiabdalslam@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+
+    toast.success("Email client opened!");
 
     // Reset form
     setFormData({
       fullName: "",
       email: "",
-      company: ""
+      company: "",
+      message: ""
     });
   };
   return <section id="contact" className="w-full bg-white py-0">
@@ -154,36 +167,81 @@ const DetailsSection = () => {
             backgroundColor: "#FFFFFF",
             border: "1px solid #ECECEC"
           }}>
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-lg">Contact Information</h4>
+                  <h4 className="font-semibold text-lg">Send us a message</h4>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
-                      <p className="font-medium text-gray-900">Loai Abdalslam Alazab</p>
-                      <p className="text-gray-600">Co-Founder</p>
-                      <p className="text-pulse-500">loaiabdalslam@gmail.com</p>
-                      <p className="text-gray-600">+20 1211268396</p>
+                      <label htmlFor="fullName" className="block text-sm font-medium text-gray-900 mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pulse-500 focus:border-pulse-500 transition-colors"
+                        required
+                      />
                     </div>
                     
-                    <div className="border-t pt-3">
-                      <p className="font-medium text-gray-900">Hamdy Waleed Abd-Elhalim</p>
-                      <p className="text-gray-600">Co-Founder</p>
-                      <p className="text-pulse-500">hamdywaleed20@gmail.com</p>
-                      <p className="text-gray-600">+20 150 514 2388</p>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pulse-500 focus:border-pulse-500 transition-colors"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="company" className="block text-sm font-medium text-gray-900 mb-2">
+                        Company
+                      </label>
+                      <input
+                        type="text"
+                        id="company"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pulse-500 focus:border-pulse-500 transition-colors"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-900 mb-2">
+                        Message *
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
+                        onChange={(e) => setFormData(prev => ({...prev, message: e.target.value}))}
+                        rows={4}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pulse-500 focus:border-pulse-500 transition-colors resize-none"
+                        required
+                      />
                     </div>
                   </div>
                 </div>
                 
                 <div className="pt-4 border-t">
-                  <a 
-                    href="mailto:loaiabdalslam@gmail.com" 
-                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300 inline-block text-center"
+                  <button 
+                    type="submit"
+                    className="w-full px-6 py-3 bg-pulse-500 hover:bg-pulse-600 text-white font-medium rounded-full transition-colors duration-300"
                   >
-                    Request Demo
-                  </a>
+                    Send Message
+                  </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

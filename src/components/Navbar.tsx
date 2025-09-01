@@ -70,6 +70,8 @@ const Navbar = () => {
             Home
           </a>
           <a href="#features" className="nav-link">About</a>
+          <a href="#models" className="nav-link">Models</a>
+          <a href="#testimonials" className="nav-link">Testimonials</a>
           <a href="#contact" className="nav-link">Contact</a>
         </nav>
 
@@ -110,6 +112,26 @@ const Navbar = () => {
             }}
           >
             About
+          </a>
+          <a 
+            href="#models" 
+            className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
+            onClick={() => {
+              setIsMenuOpen(false);
+              document.body.style.overflow = '';
+            }}
+          >
+            Models
+          </a>
+          <a 
+            href="#testimonials" 
+            className="text-xl font-medium py-3 px-6 w-full text-center rounded-lg hover:bg-gray-100" 
+            onClick={() => {
+              setIsMenuOpen(false);
+              document.body.style.overflow = '';
+            }}
+          >
+            Testimonials
           </a>
           <a 
             href="#contact" 
